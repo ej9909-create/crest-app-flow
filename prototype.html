@@ -62,8 +62,7 @@
   .bn button.on{color:var(--gold)}
   .bn svg{width:20px; height:20px}
 
-  .chips{display:flex; gap:7px; overflow-x:auto; padding:2px 0}
-  .chips::-webkit-scrollbar{display:none}
+  .chips{display:flex; gap:7px; flex-wrap:wrap; padding:2px 0}
   .chip{font-size:12px; font-weight:600; padding:7px 13px; border-radius:999px; background:var(--elev); color:var(--mut);
     border:1px solid var(--hair); white-space:nowrap; cursor:pointer; font-family:inherit}
   .chip.on{background:var(--gold); color:#1a1300; border-color:var(--gold)}
@@ -110,6 +109,25 @@
   .slider .kb{position:absolute; top:50%; width:16px; height:16px; border-radius:50%; background:#fff; transform:translate(-50%,-50%); box-shadow:0 2px 6px rgba(0,0,0,.5)}
   .lock{display:inline-flex; align-items:center; gap:5px; font-size:11px; color:var(--gold); background:var(--gold-dim); padding:4px 9px; border-radius:8px; font-weight:700}
   .tier .li{display:flex; gap:8px; align-items:flex-start; font-size:12.5px; margin:8px 0}
+  /* segmented control */
+  .seg{display:flex; gap:4px; background:var(--bg); border:1px solid var(--hair); border-radius:11px; padding:3px}
+  .seg button{flex:1; background:none; border:0; color:var(--mut); font-size:12px; font-weight:700; padding:8px 4px; border-radius:8px; cursor:pointer; font-family:inherit; display:flex; align-items:center; justify-content:center; gap:5px}
+  .seg button.on{background:var(--gold); color:#1a1300}
+  .seg .count{font-size:10px; background:rgba(0,0,0,.18); border-radius:999px; padding:0 6px; font-weight:700}
+  .seg button:not(.on) .count{background:var(--elev); color:var(--mut)}
+  /* range inputs */
+  input[type=range].rng{-webkit-appearance:none; appearance:none; width:100%; height:4px; border-radius:4px; background:var(--hair); outline:none; margin:10px 0 2px; cursor:pointer}
+  input[type=range].rng::-webkit-slider-thumb{-webkit-appearance:none; width:18px; height:18px; border-radius:50%; background:#fff; cursor:pointer; box-shadow:0 2px 6px rgba(0,0,0,.5); border:2px solid var(--gold)}
+  input[type=range].rng::-moz-range-thumb{width:16px; height:16px; border-radius:50%; background:#fff; cursor:pointer; border:2px solid var(--gold)}
+  .lbl-row{display:flex; align-items:center; justify-content:space-between}
+  .lbl-row .lab{color:var(--mut); font-size:12px}
+  .minmax{display:flex; justify-content:space-between; font-size:10px; color:var(--dim); margin-top:2px}
+  /* per-alert actions */
+  .acts{display:flex; gap:8px; border-top:1px solid var(--hair); margin-top:2px; padding-top:8px}
+  .acts button{flex:1; background:var(--bg); border:1px solid var(--hair); color:var(--tx); font-size:11.5px; font-weight:600; padding:7px; border-radius:9px; cursor:pointer; font-family:inherit; display:flex; align-items:center; justify-content:center; gap:5px}
+  .acts button.danger{color:var(--down)}
+  .acts button.gold{color:var(--gold); border-color:var(--gold-dim); background:var(--gold-dim)}
+  .empty{display:grid; place-items:center; text-align:center; gap:8px; padding:30px 20px; color:var(--mut)}
 
   /* sheets / overlays */
   .scrim{position:absolute; inset:0; background:rgba(4,6,10,.55); opacity:0; visibility:hidden; transition:.2s; z-index:50}
@@ -189,6 +207,7 @@
         <div class="av" onclick="go('account')">AS</div>
       </div>
       <div class="content pad">
+        <div class="lab" style="color:var(--mut); font-size:11px; margin-top:2px">High window</div>
         <div class="chips" id="chips">
           <span class="chip on" data-win="ath" onclick="setWin('ath')">All-time</span>
           <span class="chip" data-win="1" onclick="setWin('1')">1Y</span>
@@ -224,8 +243,8 @@
           <defs><linearGradient id="gg" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#2ED09A"/><stop offset="1" stop-color="#2ED09A" stop-opacity="0"/></linearGradient></defs>
         </svg>
         <div class="rmid">
-          <div class="stat"><div class="k" id="d-wlabel">3-year high</div><div class="v mono" id="d-whigh" style="color:var(--up)">—</div><div class="note" id="d-wpct" style="font-size:9px"></div></div>
-          <div class="stat"><div class="k">All-time high</div><div class="v mono" id="d-ath" style="color:var(--gold)">—</div><div class="note" id="d-athpct" style="font-size:9px"></div></div>
+          <div class="stat"><div class="k" id="d-l1">—</div><div class="v mono" id="d-v1">—</div><div class="note" id="d-s1" style="font-size:9px"></div></div>
+          <div class="stat"><div class="k" id="d-l2">—</div><div class="v mono" id="d-v2">—</div><div class="note" id="d-s2" style="font-size:9px"></div></div>
           <div class="stat"><div class="k">Avg vol 20d</div><div class="v mono" id="d-vol">—</div><div class="note" id="d-band" style="font-size:9px"></div></div>
         </div>
         <button class="btn gold sm" onclick="openSheet('addalert')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6M10 20a2 2 0 0 0 4 0"/></svg> Set price alert</button>
@@ -234,14 +253,16 @@
 
     <!-- ALERTS -->
     <section class="view" id="v-alerts" data-nav="2">
-      <div class="ab"><div><div class="title">Price alerts</div><div class="sub">Real-time · push + Telegram</div></div><div class="av" onclick="go('account')">AS</div></div>
+      <div class="ab"><div class="title">Price alerts</div><div class="av" onclick="go('account')">AS</div></div>
+      <div style="padding:0 15px 8px">
+        <div class="seg" id="aseg">
+          <button class="on" onclick="alertTab('active')">Active <span class="count" id="c-active">2</span></button>
+          <button onclick="alertTab('triggered')">Triggered <span class="count" id="c-trig">1</span></button>
+        </div>
+      </div>
       <div class="content pad">
-        <div class="rcard" style="cursor:default"><div class="rtop"><div><div class="tkr mono">RELIANCE</div><div class="co">Above ₹1,320</div></div><span class="pill up">● Active</span></div>
-          <div class="row note"><span>Now ₹1,287 · 2.5% to go</span><span class="mono">one-shot</span></div></div>
-        <div class="rcard" id="pvr" style="cursor:default"><div class="rtop"><div><div class="tkr mono">PVRINOX</div><div class="co">Above ₹1,250</div></div><span class="pill near" id="pvr-pill">✓ Triggered</span></div>
-          <div class="row note"><span id="pvr-meta">Hit ₹1,251 · 27 Aug 14:02</span><span class="link" id="pvr-act" onclick="rearm()">Re-arm</span></div></div>
-        <div class="rcard" style="cursor:default"><div class="rtop"><div><div class="tkr mono">TATAMOTORS</div><div class="co">Below ₹900</div></div><span class="pill up">● Active</span></div>
-          <div class="row note"><span>Now ₹947 · 5.2% to go</span><span class="mono">one-shot</span></div></div>
+        <div id="alist-active"></div>
+        <div id="alist-triggered" style="display:none"></div>
         <button class="btn gold sm" onclick="openSheet('addalert')">＋ Add alert</button>
       </div>
       <div class="bn">
@@ -299,14 +320,43 @@
     <div class="sheet" id="sheet-filters">
       <div class="grab"></div>
       <div class="row"><div style="font-weight:700; font-size:15px">Filters</div><span class="link" onclick="toast('Filters reset')">Reset</span></div>
-      <div><div class="row"><span class="lab" style="color:var(--mut);font-size:12px">High older than</span><span class="mono">90 days</span></div>
-        <div class="slider"><span class="fill" style="left:8%; width:32%"></span><span class="kb" style="left:40%"></span></div></div>
-      <div><div class="row"><span class="lab" style="color:var(--mut);font-size:12px">Pullback band</span><span class="mono">1 – 10%</span></div>
-        <div class="slider"><span class="fill" style="left:12%; width:54%"></span><span class="kb" style="left:12%"></span><span class="kb" style="left:66%"></span></div></div>
+      <div>
+        <div class="lab" style="color:var(--mut);font-size:11px;margin-bottom:6px">High window</div>
+        <div class="seg" id="fwin">
+          <button class="on" data-win="ath" onclick="setWin('ath')">All-time</button>
+          <button data-win="1" onclick="setWin('1')">1Y</button>
+          <button data-win="3" onclick="setWin('3')">3Y</button>
+          <button data-win="5" onclick="setWin('5')">5Y</button>
+          <button data-win="10" onclick="setWin('10')">10Y</button>
+        </div>
+      </div>
+      <div>
+        <div class="lbl-row"><span class="lab">High older than</span><span class="mono" id="lbl-days">90 days</span></div>
+        <input type="range" class="rng" min="1" max="364" value="90"
+          oninput="document.getElementById('lbl-days').textContent=this.value+' days'">
+      </div>
+      <div>
+        <div class="lbl-row"><span class="lab">Pullback band</span><span class="mono" id="lbl-band">1 – 10%</span></div>
+        <input type="range" class="rng" id="bmin" min="0" max="25" step="0.5" value="1" oninput="updBand()">
+        <input type="range" class="rng" id="bmax" min="0" max="25" step="0.5" value="10" oninput="updBand()">
+        <div class="minmax"><span>min pullback</span><span>max pullback</span></div>
+      </div>
       <div class="field"><span>Futures-enabled (F&amp;O)</span><span class="toggle" onclick="this.classList.toggle('on')"></span></div>
       <div class="field"><span>Qty + Upper circuit 20%</span><span class="toggle" onclick="this.classList.toggle('on')"></span></div>
       <div class="field"><span>Listing window <span class="mono" style="color:var(--dim)">3–12 mo</span></span><span class="toggle on" onclick="this.classList.toggle('on')"></span></div>
       <button class="btn gold sm" onclick="closeSheet(); toast('Filters applied')">Show results</button>
+    </div>
+
+    <div class="sheet" id="sheet-editalert">
+      <div class="grab"></div>
+      <div class="row"><div style="font-weight:700; font-size:15px">Edit alert</div><span class="note mono" id="ea-tkr">—</span></div>
+      <div class="field"><span class="lab" style="color:var(--mut)">Trigger when price is</span><span style="font-weight:700">Above ▾</span></div>
+      <div class="field"><span class="lab" style="color:var(--mut)">Level</span><span class="mono" style="font-size:16px; font-weight:700">₹ 1,320.00</span></div>
+      <div class="field"><span>Note <span class="note">(optional)</span></span><span class="note">Breakout watch</span></div>
+      <div class="acts" style="border:0; padding-top:2px">
+        <button class="danger" onclick="delFromEdit()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg> Delete</button>
+        <button class="gold" style="flex:2" onclick="closeSheet(); toast('Alert updated ✓')">Save changes</button>
+      </div>
     </div>
 
     <div class="sheet" id="sheet-addalert">
@@ -360,11 +410,11 @@
   };
   // detail data (falls back gracefully)
   var DET = {
-    AKSHARCHEM:{c:'AksharChem India · Chemicals',ltp:'365.65',w:'373.36',wp:'2.1% away',ath:'889.56',ap:'58.9% away',vol:'8,352',band:'Band 5%'},
-    APLAPOLLO:{c:'APL Apollo Tubes · Steel',ltp:'2,265.60',w:'2,301.40',wp:'at ATH',ath:'2,301.40',ap:'1.6% away',vol:'701,222',band:'F&O'},
-    VIJIFIN:{c:'Viji Finance · NBFC',ltp:'14.75',w:'15.05',wp:'at ATH',ath:'15.05',ap:'2.0% away',vol:'130,376',band:'Band 5%'},
-    'BAJAJ-AUTO':{c:'Bajaj Auto · Auto',ltp:'11,910',w:'12,285',wp:'at ATH',ath:'12,285',ap:'3.1% away',vol:'228,099',band:'F&O'},
-    ICICIBANK:{c:'ICICI Bank · Banks',ltp:'1,443',w:'1,476',wp:'at ATH',ath:'1,476',ap:'2.2% away',vol:'9.8M',band:'F&O'}
+    AKSHARCHEM:{c:'AksharChem India · Chemicals',ltp:'365.65',w:'373.36',wp:'2.1% away',ath:'889.56',ap:'58.9% away',vol:'8,352',band:'Band 5%',age:'395d'},
+    APLAPOLLO:{c:'APL Apollo Tubes · Steel',ltp:'2,265.60',w:'2,301.40',wp:'at high',ath:'2,301.40',ap:'1.6% away',vol:'701,222',band:'F&O',age:'197d'},
+    VIJIFIN:{c:'Viji Finance · NBFC',ltp:'14.75',w:'15.05',wp:'at high',ath:'15.05',ap:'2.0% away',vol:'130,376',band:'Band 5%',age:'~9y'},
+    'BAJAJ-AUTO':{c:'Bajaj Auto · Auto',ltp:'11,910',w:'12,285',wp:'at high',ath:'12,285',ap:'3.1% away',vol:'228,099',band:'F&O',age:'700d'},
+    ICICIBANK:{c:'ICICI Bank · Banks',ltp:'1,443',w:'1,476',wp:'at high',ath:'1,476',ap:'2.2% away',vol:'9.8M',band:'F&O',age:'34d'}
   };
   var curWin='ath';
 
@@ -377,7 +427,13 @@
   window.setWin=function(w){
     curWin=w;
     document.querySelectorAll('#chips .chip').forEach(function(c){c.classList.toggle('on', c.dataset.win===w)});
+    document.querySelectorAll('#fwin button').forEach(function(b){b.classList.toggle('on', b.dataset.win===w)});
     renderResults();
+  };
+  window.updBand=function(){
+    var lo=parseFloat(document.getElementById('bmin').value), hi=parseFloat(document.getElementById('bmax').value);
+    if(lo>hi){ var t=lo; lo=hi; hi=t; }
+    document.getElementById('lbl-band').textContent=lo+' – '+hi+'%';
   };
   function renderResults(){
     var d=WIN[curWin], html='';
@@ -391,21 +447,28 @@
     });
     document.getElementById('results').innerHTML=html;
   }
+  function set(id,txt){var e=document.getElementById(id); if(e) e.textContent=txt;}
   window.openDetail=function(t){
-    var d=DET[t]||{c:'—',ltp:'—',w:'—',wp:'',ath:'—',ap:'',vol:'—',band:''};
-    document.getElementById('d-tkr').textContent=t;
-    document.getElementById('d-co').textContent=d.c;
-    document.getElementById('d-ltp').textContent=d.ltp;
-    var wl = curWin==='ath' ? 'All-time high' : curWin+'-year high';
-    document.getElementById('d-sub').textContent='near its '+ (curWin==='ath'?'all-time high':curWin+'-year high');
-    document.getElementById('d-wlabel').textContent=wl;
-    document.getElementById('d-whigh').textContent=d.w;
-    document.getElementById('d-wpct').textContent=d.wp;
-    document.getElementById('d-ath').textContent=d.ath;
-    document.getElementById('d-athpct').textContent=d.ap;
-    document.getElementById('d-vol').textContent=d.vol;
-    document.getElementById('d-band').textContent=d.band;
-    document.getElementById('aa-tkr').textContent=t+' · ₹'+d.ltp;
+    var d=DET[t];
+    if(!d){  // fall back to the list-row data so any card opens populated
+      var wr=(WIN[curWin].rows||[]).filter(function(r){return r.t===t;})[0]||{};
+      var away=wr.pct?wr.pct+'% away':'';
+      d={c:(wr.c||t), ltp:wr.ltp||'—', w:wr.h||'—', wp:away, ath:wr.h||'—', ap:away,
+         vol:'—', band:'—', age:wr.age||'—'};
+    }
+    set('d-tkr',t); set('d-co',d.c); set('d-ltp',d.ltp);
+    var v1=document.getElementById('d-v1'), v2=document.getElementById('d-v2');
+    if(curWin==='ath'){
+      set('d-sub','near its all-time high');
+      set('d-l1','All-time high'); v1.textContent=d.ath; v1.style.color='var(--gold)'; set('d-s1',d.ap);
+      set('d-l2','High age');      v2.textContent=d.age; v2.style.color='var(--tx)';   set('d-s2','since high');
+    } else {
+      set('d-sub','near its '+curWin+'-year high');
+      set('d-l1',curWin+'-year high'); v1.textContent=d.w;   v1.style.color='var(--up)';   set('d-s1',d.wp);
+      set('d-l2','All-time high');     v2.textContent=d.ath; v2.style.color='var(--gold)'; set('d-s2',d.ap);
+    }
+    set('d-vol',d.vol); set('d-band',d.band);
+    set('aa-tkr', t+' · ₹'+d.ltp);
     go('detail');
   };
   window.openSheet=function(name){
@@ -421,14 +484,62 @@
     var t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show');
     clearTimeout(tmr); tmr=setTimeout(function(){t.classList.remove('show')},1600);
   };
-  window.rearm=function(){
-    document.getElementById('pvr-pill').outerHTML='<span class="pill up" id="pvr-pill">● Active</span>';
-    document.getElementById('pvr-meta').textContent='Now ₹1,251 · re-armed';
-    document.getElementById('pvr-act').outerHTML='<span class="mono note">one-shot</span>';
-    toast('PVRINOX alert re-armed');
+  // ---- alerts ----
+  var ALERTS={
+    active:[
+      {id:1,t:'RELIANCE',cond:'Above ₹1,320',meta:'Now ₹1,287 · 2.5% to go'},
+      {id:3,t:'TATAMOTORS',cond:'Below ₹900',meta:'Now ₹947 · 5.2% to go'}
+    ],
+    triggered:[
+      {id:2,t:'PVRINOX',cond:'Above ₹1,250',meta:'Hit ₹1,251 · 27 Aug 14:02'}
+    ]
   };
+  var editId=null;
+  function ic(n){
+    if(n==='edit') return '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>';
+    if(n==='del') return '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>';
+    if(n==='rearm') return '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 4v4h4"/></svg>';
+    return '';
+  }
+  function renderAlerts(){
+    document.getElementById('c-active').textContent=ALERTS.active.length;
+    document.getElementById('c-trig').textContent=ALERTS.triggered.length;
+    document.getElementById('alist-active').innerHTML = ALERTS.active.length ? ALERTS.active.map(function(a){
+      return '<div class="rcard" style="cursor:default"><div class="rtop"><div><div class="tkr mono">'+a.t+'</div><div class="co">'+a.cond+'</div></div><span class="pill up">● Active</span></div>'
+        +'<div class="row note"><span>'+a.meta+'</span><span class="mono">one-shot</span></div>'
+        +'<div class="acts"><button onclick="editAlert('+a.id+')">'+ic('edit')+' Edit</button>'
+        +'<button class="danger" onclick="delAlert('+a.id+",'active')\">"+ic('del')+' Delete</button></div></div>';
+    }).join('') : '<div class="empty">No active alerts.<br>Add one below.</div>';
+    document.getElementById('alist-triggered').innerHTML = ALERTS.triggered.length ? ALERTS.triggered.map(function(a){
+      return '<div class="rcard" style="cursor:default"><div class="rtop"><div><div class="tkr mono">'+a.t+'</div><div class="co">'+a.cond+'</div></div><span class="pill near">✓ Triggered</span></div>'
+        +'<div class="row note"><span>'+a.meta+'</span></div>'
+        +'<div class="acts"><button class="gold" onclick="rearmAlert('+a.id+')">'+ic('rearm')+' Re-arm</button>'
+        +'<button class="danger" onclick="delAlert('+a.id+",'triggered')\">"+ic('del')+' Delete</button></div></div>';
+    }).join('') : '<div class="empty">Nothing triggered yet.<br>One-shot alerts land here after they fire.</div>';
+  }
+  window.alertTab=function(tab){
+    document.querySelectorAll('#aseg button').forEach(function(b,i){ b.classList.toggle('on', (i===0)===(tab==='active')); });
+    document.getElementById('alist-active').style.display   = tab==='active'    ? '' : 'none';
+    document.getElementById('alist-triggered').style.display= tab==='triggered' ? '' : 'none';
+  };
+  window.delAlert=function(id, from){
+    ALERTS[from]=ALERTS[from].filter(function(a){return a.id!==id;});
+    renderAlerts(); toast('Alert deleted');
+  };
+  window.rearmAlert=function(id){
+    var i=ALERTS.triggered.findIndex(function(a){return a.id===id;});
+    if(i>-1){ var a=ALERTS.triggered.splice(i,1)[0]; a.meta='Watching again · re-armed'; ALERTS.active.push(a); }
+    renderAlerts(); alertTab('active'); toast('Re-armed ✓');
+  };
+  window.editAlert=function(id){
+    var a=ALERTS.active.find(function(x){return x.id===id;}); editId=id;
+    document.getElementById('ea-tkr').textContent = a ? (a.t+' · '+a.cond) : '';
+    openSheet('editalert');
+  };
+  window.delFromEdit=function(){ if(editId){ delAlert(editId,'active'); } closeSheet(); };
 
   renderResults();
+  renderAlerts();
   // splash auto-advance
   var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
   if(!reduce) setTimeout(function(){ if(document.getElementById('v-splash').classList.contains('active')) go('signin'); }, 1600);
