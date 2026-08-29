@@ -1,0 +1,436 @@
+<meta charset="utf-8">
+<title>Crest — Interactive Prototype</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root{
+    --page-bg:#EDEEF1; --ink:#14181F; --muted:#5C6470; --line:#D8DBE1; --accent:#B57E00;
+  }
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+    --page-bg:#090B10; --ink:#EDF1F7; --muted:#8A93A3; --line:#20252F; --accent:#FFB020;}}
+  :root[data-theme="dark"]{--page-bg:#090B10; --ink:#EDF1F7; --muted:#8A93A3; --line:#20252F; --accent:#FFB020;}
+  /* fixed app palette */
+  :root{
+    --bg:#0D1017; --surf:#161B24; --elev:#1E242F; --hair:#262D3A;
+    --tx:#EDF1F7; --mut:#838EA0; --dim:#5A6474;
+    --gold:#FFB020; --gold-dim:#3A2E12; --up:#2ED09A; --up-dim:#123329;
+    --down:#FF6B7D; --down-dim:#3A1620;
+  }
+  *{box-sizing:border-box}
+  body{margin:0; background:
+      radial-gradient(90% 60% at 50% -10%, rgba(255,176,32,.10), transparent 60%),
+      var(--page-bg);
+    color:var(--ink); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased; min-height:100vh; display:flex; flex-direction:column; align-items:center;}
+  .mono{font-family:ui-monospace,"SF Mono",Menlo,monospace; font-variant-numeric:tabular-nums}
+  header{text-align:center; padding:34px 20px 10px; max-width:560px}
+  .kick{font-size:12px; letter-spacing:.18em; text-transform:uppercase; color:var(--accent); font-weight:700}
+  h1{font-size:26px; margin:.3em 0 .2em; letter-spacing:-.02em}
+  header p{color:var(--muted); font-size:14px; margin:0}
+  .hint{display:inline-flex; align-items:center; gap:7px; margin-top:12px; font-size:12.5px; color:var(--muted);
+    background:color-mix(in srgb, var(--ink) 6%, transparent); border:1px solid var(--line); border-radius:999px; padding:6px 13px}
+  .hint b{color:var(--ink)}
+
+  .stage{flex:1; display:grid; place-items:center; padding:22px 16px 40px; width:100%}
+  /* ---- phone ---- */
+  .phone{width:328px; height:710px; max-width:92vw; background:#0D1017; border-radius:44px; padding:11px;
+    border:1px solid #2b2b31; position:relative;
+    box-shadow:0 1px 0 rgba(255,255,255,.05) inset, 0 40px 80px -30px rgba(0,0,0,.75), 0 0 0 10px rgba(0,0,0,.22);}
+  @media (max-height:760px){.phone{height:88vh}}
+  .screen{position:absolute; inset:11px; border-radius:33px; overflow:hidden; background:var(--bg); color:var(--tx);
+    font-size:13px; isolation:isolate}
+  .sb{height:36px; display:flex; align-items:center; justify-content:space-between; padding:0 20px 0 22px;
+    font-size:12px; font-weight:600; position:relative; z-index:40; flex:0 0 36px}
+  .sb .isle{position:absolute; left:50%; top:9px; transform:translateX(-50%); width:80px; height:20px; background:#000; border-radius:12px}
+  .sb .icons{display:flex; gap:5px; align-items:center}
+
+  /* view system */
+  .view{position:absolute; top:36px; left:0; right:0; bottom:0; display:flex; flex-direction:column; background:var(--bg);
+    opacity:0; visibility:hidden; transform:translateX(10px); transition:opacity .22s ease, transform .22s ease; z-index:1}
+  .view.active{opacity:1; visibility:visible; transform:none; z-index:2}
+  @media (prefers-reduced-motion:reduce){.view{transition:none}}
+  .content{flex:1; overflow-y:auto; overflow-x:hidden; -webkit-overflow-scrolling:touch}
+  .content::-webkit-scrollbar{display:none}
+  .pad{padding:0 15px 14px; display:flex; flex-direction:column; gap:10px}
+
+  .ab{display:flex; align-items:center; justify-content:space-between; padding:4px 15px 8px}
+  .ab .title{font-size:17px; font-weight:700; letter-spacing:-.01em}
+  .ab .sub{font-size:11px; color:var(--mut)}
+  .av{width:30px; height:30px; border-radius:50%; background:linear-gradient(135deg,#2b3342,#1a1f29); display:grid; place-items:center; font-size:12px; font-weight:700; border:1px solid var(--hair); cursor:pointer}
+
+  .bn{flex:0 0 56px; display:flex; border-top:1px solid var(--hair); background:var(--surf); z-index:30}
+  .bn button{flex:1; background:none; border:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; color:var(--dim); font-size:10px; font-weight:600; cursor:pointer; font-family:inherit}
+  .bn button.on{color:var(--gold)}
+  .bn svg{width:20px; height:20px}
+
+  .chips{display:flex; gap:7px; overflow-x:auto; padding:2px 0}
+  .chips::-webkit-scrollbar{display:none}
+  .chip{font-size:12px; font-weight:600; padding:7px 13px; border-radius:999px; background:var(--elev); color:var(--mut);
+    border:1px solid var(--hair); white-space:nowrap; cursor:pointer; font-family:inherit}
+  .chip.on{background:var(--gold); color:#1a1300; border-color:var(--gold)}
+  .filterbar{display:flex; align-items:center; justify-content:space-between; gap:8px}
+  .fbtn{display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:600; color:var(--tx);
+    background:var(--surf); border:1px solid var(--hair); padding:8px 12px; border-radius:10px; cursor:pointer; font-family:inherit}
+  .badge{font-size:10px; background:var(--gold); color:#1a1300; border-radius:999px; padding:1px 6px; font-weight:700}
+
+  .rcard{background:var(--surf); border:1px solid var(--hair); border-radius:14px; padding:11px 12px; display:flex; flex-direction:column; gap:9px; cursor:pointer; transition:border-color .15s}
+  .rcard:active{border-color:var(--gold)}
+  .rtop{display:flex; align-items:center; justify-content:space-between}
+  .tkr{font-size:14px; font-weight:700}
+  .co{font-size:10px; color:var(--mut); margin-top:1px}
+  .pill{font-size:11px; font-weight:700; padding:3px 8px; border-radius:8px; white-space:nowrap}
+  .pill.near{background:var(--gold-dim); color:var(--gold)}
+  .pill.up{background:var(--up-dim); color:var(--up)}
+  .rmid{display:flex; gap:6px}
+  .stat{flex:1; background:var(--bg); border:1px solid var(--hair); border-radius:9px; padding:6px 8px}
+  .stat .k{font-size:9px; color:var(--dim); text-transform:uppercase; letter-spacing:.05em}
+  .stat .v{font-size:12.5px; font-weight:700; margin-top:2px}
+
+  .btn{display:flex; align-items:center; justify-content:center; gap:8px; width:100%; padding:13px; border-radius:13px;
+    font-size:14px; font-weight:700; border:0; cursor:pointer; font-family:inherit}
+  .btn.gold{background:var(--gold); color:#1a1300}
+  .btn.ghost{background:var(--surf); color:var(--tx); border:1px solid var(--hair)}
+  .btn.google{background:#fff; color:#1f1f1f}
+  .btn.sm{padding:11px; font-size:13px}
+  .link{color:var(--gold); cursor:pointer; font-weight:600}
+
+  .mark{width:64px; height:64px; border-radius:18px; background:linear-gradient(160deg,#1c222d,#11151d);
+    border:1px solid var(--hair); display:grid; place-items:center; box-shadow:0 12px 34px -10px rgba(255,176,32,.4)}
+  .big{font-size:44px; font-weight:800; letter-spacing:-.03em; line-height:1}
+  .note{font-size:11px; color:var(--mut)}
+  .field{background:var(--surf); border:1px solid var(--hair); border-radius:12px; padding:11px 13px; display:flex; align-items:center; justify-content:space-between; font-size:13px}
+  .field .lab{color:var(--mut); font-size:11px}
+  .row{display:flex; align-items:center; justify-content:space-between; gap:10px}
+  .divider{height:1px; background:var(--hair)}
+  .dot{width:6px;height:6px;border-radius:50%;background:var(--up);box-shadow:0 0 0 3px var(--up-dim); display:inline-block}
+  .toggle{width:42px; height:25px; border-radius:999px; background:var(--hair); position:relative; cursor:pointer; flex:0 0 auto; transition:background .15s}
+  .toggle::after{content:""; position:absolute; top:3px; left:3px; width:19px; height:19px; border-radius:50%; background:var(--mut); transition:.15s}
+  .toggle.on{background:var(--gold)} .toggle.on::after{left:20px; background:#1a1300}
+  .slider{height:4px; border-radius:4px; background:var(--hair); position:relative; margin:14px 6px 4px}
+  .slider .fill{position:absolute; height:100%; background:var(--gold); border-radius:4px}
+  .slider .kb{position:absolute; top:50%; width:16px; height:16px; border-radius:50%; background:#fff; transform:translate(-50%,-50%); box-shadow:0 2px 6px rgba(0,0,0,.5)}
+  .lock{display:inline-flex; align-items:center; gap:5px; font-size:11px; color:var(--gold); background:var(--gold-dim); padding:4px 9px; border-radius:8px; font-weight:700}
+  .tier .li{display:flex; gap:8px; align-items:flex-start; font-size:12.5px; margin:8px 0}
+
+  /* sheets / overlays */
+  .scrim{position:absolute; inset:0; background:rgba(4,6,10,.55); opacity:0; visibility:hidden; transition:.2s; z-index:50}
+  .scrim.show{opacity:1; visibility:visible}
+  .sheet{position:absolute; left:0; right:0; bottom:0; background:var(--surf); border-top:1px solid var(--hair);
+    border-radius:22px 22px 0 0; padding:8px 16px 20px; display:flex; flex-direction:column; gap:12px;
+    transform:translateY(102%); transition:transform .26s cubic-bezier(.2,.8,.2,1); z-index:60}
+  .sheet.show{transform:none}
+  @media (prefers-reduced-motion:reduce){.sheet{transition:none}}
+  .grab{width:38px; height:4px; border-radius:4px; background:var(--hair); margin:2px auto 4px}
+
+  .toast{position:absolute; left:50%; bottom:74px; transform:translateX(-50%) translateY(8px); background:#0b0e14;
+    border:1px solid var(--hair); color:var(--tx); font-size:12px; font-weight:600; padding:10px 15px; border-radius:12px;
+    box-shadow:0 12px 30px -12px rgba(0,0,0,.8); opacity:0; visibility:hidden; transition:.2s; z-index:80; display:flex; gap:8px; align-items:center; white-space:nowrap}
+  .toast.show{opacity:1; visibility:visible; transform:translateX(-50%)}
+
+  footer{color:var(--muted); font-size:12.5px; padding:0 20px 40px; text-align:center; max-width:560px}
+  footer a{color:var(--accent)}
+</style>
+
+<header>
+  <div class="kick">Interactive prototype · v0</div>
+  <h1>Crest — tap through the flow</h1>
+  <p>A working click-through of the whole journey. Not the real build — a prototype to feel the navigation.</p>
+  <div class="hint">👆 <span><b>Tap around:</b> chips, cards, filters, bottom nav — it all responds.</span></div>
+</header>
+
+<div class="stage">
+  <div class="phone"><div class="screen">
+    <div class="sb">
+      <span class="time mono">16:07</span><span class="isle"></span>
+      <span class="icons" id="sbicons"></span>
+    </div>
+
+    <!-- SPLASH -->
+    <section class="view active" id="v-splash" data-nav="0" onclick="go('signin')" style="cursor:pointer">
+      <div class="content" style="display:grid; place-items:center; text-align:center">
+        <div>
+          <div class="mark" style="margin:0 auto"><svg width="34" height="34" viewBox="0 0 34 34" fill="none"><path d="M4 26 12 16 18 21 26 7 30 12" stroke="#FFB020" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><circle cx="26" cy="7" r="2.6" fill="#FFB020"/></svg></div>
+          <div style="font-size:27px; font-weight:800; letter-spacing:-.02em; margin-top:18px">Crest</div>
+          <div class="note" style="margin-top:6px">Stocks perched near their peak, pulled back.</div>
+          <div class="note" style="margin-top:26px; opacity:.6">tap to continue</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SIGN IN -->
+    <section class="view" id="v-signin" data-nav="0">
+      <div class="content pad" style="justify-content:center; gap:16px; padding-top:0">
+        <div class="mark" style="width:46px;height:46px;border-radius:14px"><svg width="26" height="26" viewBox="0 0 34 34" fill="none"><path d="M4 26 12 16 18 21 26 7 30 12" stroke="#FFB020" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="26" cy="7" r="2.4" fill="#FFB020"/></svg></div>
+        <div><div style="font-size:22px; font-weight:800; letter-spacing:-.02em">Welcome back</div>
+          <div class="note" style="margin-top:6px">Sign in to run the screener and manage alerts.</div></div>
+        <button class="btn google" onclick="go('screener')"><svg width="16" height="16" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.6l6.8-6.8C35.6 2.4 30.2 0 24 0 14.6 0 6.5 5.4 2.6 13.2l7.9 6.2C12.4 13.6 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.1 24.5c0-1.6-.1-3.2-.4-4.7H24v9h12.4c-.5 2.9-2.1 5.3-4.6 7l7.2 5.6C43.6 37.5 46.1 31.6 46.1 24.5z"/><path fill="#FBBC05" d="M10.5 28.4a14.5 14.5 0 0 1 0-8.9l-7.9-6.2A24 24 0 0 0 0 24c0 3.9.9 7.5 2.6 10.7l7.9-6.3z"/><path fill="#34A853" d="M24 48c6.2 0 11.5-2 15.3-5.6l-7.2-5.6c-2 1.4-4.6 2.2-8.1 2.2-6.3 0-11.6-4.1-13.5-9.7l-7.9 6.3C6.5 42.6 14.6 48 24 48z"/></svg> Continue with Google</button>
+        <button class="btn ghost" onclick="go('screener')">Continue with email</button>
+        <div class="row"><div class="divider" style="flex:1"></div><span class="note">invite-only</span><div class="divider" style="flex:1"></div></div>
+        <div class="note" style="text-align:center">Access is limited to the early cohort. <span class="link" onclick="go('waitlist')">Have a code?</span></div>
+      </div>
+    </section>
+
+    <!-- WAITLIST -->
+    <section class="view" id="v-waitlist" data-nav="0">
+      <div class="ab"><span class="fbtn" style="border:0;background:none;padding-left:2px" onclick="go('signin')">‹ Back</span></div>
+      <div class="content pad" style="justify-content:center; text-align:center; align-items:center; gap:14px">
+        <div style="width:56px;height:56px;border-radius:16px;background:var(--gold-dim);display:grid;place-items:center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FFB020" stroke-width="1.7" stroke-linejoin="round" stroke-linecap="round"><path d="M6 2h12v3l-5 7 5 7v3H6v-3l5-7-5-7V2z"/></svg></div>
+        <div style="font-size:20px; font-weight:800">You’re on the list</div>
+        <div class="note" style="max-width:26ch">We’re onboarding the first group in small batches. Enter an invite code to skip the queue.</div>
+        <div class="field" style="width:100%"><span class="lab">Invite code</span><span class="mono" style="letter-spacing:2px; color:var(--dim)">— — — — — —</span></div>
+        <button class="btn gold sm" style="width:100%" onclick="toast('Code accepted · welcome!'); setTimeout(()=>go('screener'),650)">Redeem &amp; enter</button>
+        <button class="btn ghost sm" style="width:100%" onclick="toast('We’ll notify you')">Notify me when I’m in</button>
+      </div>
+    </section>
+
+    <!-- SCREENER -->
+    <section class="view" id="v-screener" data-nav="1">
+      <div class="ab">
+        <div><div class="title">Screener</div><div class="sub"><span class="dot"></span> As of 28 Aug · live 16:07</div></div>
+        <div class="av" onclick="go('account')">AS</div>
+      </div>
+      <div class="content pad">
+        <div class="chips" id="chips">
+          <span class="chip on" data-win="ath" onclick="setWin('ath')">All-time</span>
+          <span class="chip" data-win="1" onclick="setWin('1')">1Y</span>
+          <span class="chip" data-win="3" onclick="setWin('3')">3Y</span>
+          <span class="chip" data-win="5" onclick="setWin('5')">5Y</span>
+          <span class="chip" data-win="10" onclick="setWin('10')">10Y</span>
+        </div>
+        <div class="filterbar">
+          <span class="fbtn" onclick="openSheet('filters')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5h18l-7 8v6l-4-2v-4L3 5z"/></svg> Filters <span class="badge" id="fcount">2</span></span>
+          <span class="note mono" id="matchcount">44 matches</span>
+        </div>
+        <div id="results"></div>
+      </div>
+      <div class="bn">
+        <button class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V5M4 15l5-5 4 3 7-8"/></svg>Screener</button>
+        <button onclick="go('alerts')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6M10 20a2 2 0 0 0 4 0"/></svg>Alerts</button>
+        <button onclick="go('account')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.4"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>Account</button>
+      </div>
+    </section>
+
+    <!-- DETAIL -->
+    <section class="view" id="v-detail" data-nav="1">
+      <div class="ab"><span class="fbtn" style="border:0;background:none;padding-left:2px" onclick="go('screener')">‹ Screener</span></div>
+      <div class="content pad">
+        <div><div class="tkr mono" id="d-tkr" style="font-size:18px">—</div><div class="co" id="d-co">—</div></div>
+        <div class="row" style="align-items:flex-end">
+          <div><div class="big mono" id="d-ltp">—</div><div class="note" id="d-sub" style="color:var(--up)">—</div></div>
+          <div class="note">Angel · 16:07</div>
+        </div>
+        <svg viewBox="0 0 300 66" width="100%" height="66" preserveAspectRatio="none">
+          <polyline points="0,52 30,47 60,54 90,40 120,45 150,30 180,35 210,18 240,27 270,11 300,15" fill="none" stroke="var(--up)" stroke-width="2"/>
+          <polyline points="0,52 30,47 60,54 90,40 120,45 150,30 180,35 210,18 240,27 270,11 300,15 300,66 0,66" fill="url(#gg)" opacity=".18" stroke="none"/>
+          <defs><linearGradient id="gg" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#2ED09A"/><stop offset="1" stop-color="#2ED09A" stop-opacity="0"/></linearGradient></defs>
+        </svg>
+        <div class="rmid">
+          <div class="stat"><div class="k" id="d-wlabel">3-year high</div><div class="v mono" id="d-whigh" style="color:var(--up)">—</div><div class="note" id="d-wpct" style="font-size:9px"></div></div>
+          <div class="stat"><div class="k">All-time high</div><div class="v mono" id="d-ath" style="color:var(--gold)">—</div><div class="note" id="d-athpct" style="font-size:9px"></div></div>
+          <div class="stat"><div class="k">Avg vol 20d</div><div class="v mono" id="d-vol">—</div><div class="note" id="d-band" style="font-size:9px"></div></div>
+        </div>
+        <button class="btn gold sm" onclick="openSheet('addalert')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6M10 20a2 2 0 0 0 4 0"/></svg> Set price alert</button>
+      </div>
+    </section>
+
+    <!-- ALERTS -->
+    <section class="view" id="v-alerts" data-nav="2">
+      <div class="ab"><div><div class="title">Price alerts</div><div class="sub">Real-time · push + Telegram</div></div><div class="av" onclick="go('account')">AS</div></div>
+      <div class="content pad">
+        <div class="rcard" style="cursor:default"><div class="rtop"><div><div class="tkr mono">RELIANCE</div><div class="co">Above ₹1,320</div></div><span class="pill up">● Active</span></div>
+          <div class="row note"><span>Now ₹1,287 · 2.5% to go</span><span class="mono">one-shot</span></div></div>
+        <div class="rcard" id="pvr" style="cursor:default"><div class="rtop"><div><div class="tkr mono">PVRINOX</div><div class="co">Above ₹1,250</div></div><span class="pill near" id="pvr-pill">✓ Triggered</span></div>
+          <div class="row note"><span id="pvr-meta">Hit ₹1,251 · 27 Aug 14:02</span><span class="link" id="pvr-act" onclick="rearm()">Re-arm</span></div></div>
+        <div class="rcard" style="cursor:default"><div class="rtop"><div><div class="tkr mono">TATAMOTORS</div><div class="co">Below ₹900</div></div><span class="pill up">● Active</span></div>
+          <div class="row note"><span>Now ₹947 · 5.2% to go</span><span class="mono">one-shot</span></div></div>
+        <button class="btn gold sm" onclick="openSheet('addalert')">＋ Add alert</button>
+      </div>
+      <div class="bn">
+        <button onclick="go('screener')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V5M4 15l5-5 4 3 7-8"/></svg>Screener</button>
+        <button class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6M10 20a2 2 0 0 0 4 0"/></svg>Alerts</button>
+        <button onclick="go('account')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.4"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>Account</button>
+      </div>
+    </section>
+
+    <!-- ACCOUNT -->
+    <section class="view" id="v-account" data-nav="3">
+      <div class="ab"><div class="title">Account</div><div class="av">AS</div></div>
+      <div class="content pad">
+        <div class="rcard" style="flex-direction:row; align-items:center; gap:12px; cursor:default">
+          <div class="av" style="width:44px;height:44px;font-size:16px; cursor:default">AS</div>
+          <div style="flex:1"><div style="font-weight:700">Abhilash S.</div><div class="note">early cohort · whitelisted</div></div>
+          <span class="lock" onclick="go('paywall')" style="cursor:pointer"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M2 7l4.5 3.5L12 3l5.5 7.5L22 7l-2 13H4L2 7z"/></svg> Free</span>
+        </div>
+        <div class="rcard" style="gap:0; padding:2px 0; cursor:default">
+          <div class="field" style="border:0;border-radius:0;border-bottom:1px solid var(--hair)" onclick="go('paywall')"><span>Upgrade to Pro</span><span class="note" style="color:var(--gold)">Unlock N-year ›</span></div>
+          <div class="field" style="border:0;border-radius:0;border-bottom:1px solid var(--hair)"><span>Notifications</span><span class="note">Push + Telegram ›</span></div>
+          <div class="field" style="border:0;border-radius:0;border-bottom:1px solid var(--hair)"><span>Default high window</span><span class="note">All-time ›</span></div>
+          <div class="field" style="border:0;border-radius:0"><span>Invite a friend</span><span class="badge">3 left</span></div>
+        </div>
+        <div class="note" style="text-align:center">Data: Angel One (live) · Yahoo (history)</div>
+        <button class="btn ghost sm" style="color:var(--down)" onclick="go('signin')">Sign out</button>
+      </div>
+      <div class="bn">
+        <button onclick="go('screener')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V5M4 15l5-5 4 3 7-8"/></svg>Screener</button>
+        <button onclick="go('alerts')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6M10 20a2 2 0 0 0 4 0"/></svg>Alerts</button>
+        <button class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.4"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>Account</button>
+      </div>
+    </section>
+
+    <!-- PAYWALL -->
+    <section class="view" id="v-paywall" data-nav="3">
+      <div class="ab"><span class="fbtn" style="border:0;background:none;padding-left:2px" onclick="go('account')">✕</span><span class="lock"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M2 7l4.5 3.5L12 3l5.5 7.5L22 7l-2 13H4L2 7z"/></svg> Crest Pro</span></div>
+      <div class="content pad">
+        <div style="font-size:21px; font-weight:800; letter-spacing:-.01em">Screen deeper.<br>Never miss the move.</div>
+        <div class="tier" style="margin-top:6px">
+          <div class="li"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#2ED09A" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span>Any <b>N-year &amp; all-time</b> high window</span></div>
+          <div class="li"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#2ED09A" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span><b>Unlimited</b> one-shot price alerts</span></div>
+          <div class="li"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#2ED09A" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span>F&amp;O + <b>Upper-circuit 20%</b> filters</span></div>
+        </div>
+        <div class="field" style="border-color:var(--gold); background:var(--gold-dim)"><span><b>Yearly</b> <span class="badge">2 mo free</span><br><span class="note">₹1,499/yr · ₹125/mo</span></span><span class="mono" style="font-weight:700">✓</span></div>
+        <div class="field"><span><b>Monthly</b><br><span class="note">₹149/mo</span></span></div>
+        <button class="btn gold" onclick="toast('Trial started 🎉'); setTimeout(()=>go('account'),750)">Start 7-day free trial</button>
+        <div class="note" style="text-align:center">Billed via Google Play · cancel anytime</div>
+      </div>
+    </section>
+
+    <!-- SCRIM + SHEETS -->
+    <div class="scrim" id="scrim" onclick="closeSheet()"></div>
+
+    <div class="sheet" id="sheet-filters">
+      <div class="grab"></div>
+      <div class="row"><div style="font-weight:700; font-size:15px">Filters</div><span class="link" onclick="toast('Filters reset')">Reset</span></div>
+      <div><div class="row"><span class="lab" style="color:var(--mut);font-size:12px">High older than</span><span class="mono">90 days</span></div>
+        <div class="slider"><span class="fill" style="left:8%; width:32%"></span><span class="kb" style="left:40%"></span></div></div>
+      <div><div class="row"><span class="lab" style="color:var(--mut);font-size:12px">Pullback band</span><span class="mono">1 – 10%</span></div>
+        <div class="slider"><span class="fill" style="left:12%; width:54%"></span><span class="kb" style="left:12%"></span><span class="kb" style="left:66%"></span></div></div>
+      <div class="field"><span>Futures-enabled (F&amp;O)</span><span class="toggle" onclick="this.classList.toggle('on')"></span></div>
+      <div class="field"><span>Qty + Upper circuit 20%</span><span class="toggle" onclick="this.classList.toggle('on')"></span></div>
+      <div class="field"><span>Listing window <span class="mono" style="color:var(--dim)">3–12 mo</span></span><span class="toggle on" onclick="this.classList.toggle('on')"></span></div>
+      <button class="btn gold sm" onclick="closeSheet(); toast('Filters applied')">Show results</button>
+    </div>
+
+    <div class="sheet" id="sheet-addalert">
+      <div class="grab"></div>
+      <div class="row"><div style="font-weight:700; font-size:15px">New alert</div><span class="note mono" id="aa-tkr">RELIANCE · ₹1,287</span></div>
+      <div class="field"><span class="lab" style="color:var(--mut)">Trigger when price is</span><span style="font-weight:700">Above ▾</span></div>
+      <div class="field"><span class="lab" style="color:var(--mut)">Level</span><span class="mono" style="font-size:16px; font-weight:700">₹ 1,320.00</span></div>
+      <div class="field"><span>Note <span class="note">(optional)</span></span><span class="note">Breakout watch</span></div>
+      <div class="row"><span class="lock"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6M10 20a2 2 0 0 0 4 0"/></svg> Fires once, then retires</span><span class="note">Re-arm anytime</span></div>
+      <button class="btn gold sm" onclick="closeSheet(); toast('Alert created ✓'); setTimeout(()=>go('alerts'),500)">Create alert</button>
+    </div>
+
+    <div class="toast" id="toast"></div>
+  </div></div>
+</div>
+
+<footer>Prototype only — no live data or real backend. <span style="opacity:.7">Also as a static screen gallery:</span> <a href="./index.html">the full flow ›</a></footer>
+
+<script>
+(function(){
+  var SB = '<svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.7" y="5" width="3" height="6" rx="1"/><rect x="9.4" y="2.5" width="3" height="8.5" rx="1"/><rect x="14" y="0" width="3" height="11" rx="1"/></svg>'
+    +'<svg width="16" height="11" viewBox="0 0 16 12" fill="currentColor"><path d="M8 2.6c2.3 0 4.4.9 6 2.4l1.4-1.5A11 11 0 0 0 8 .4 11 11 0 0 0 .6 3.5L2 5A8.6 8.6 0 0 1 8 2.6z"/><path d="M8 6.1c1.3 0 2.5.5 3.4 1.4l1.4-1.5A7 7 0 0 0 8 4a7 7 0 0 0-4.8 2l1.4 1.5A4.8 4.8 0 0 1 8 6.1z"/><circle cx="8" cy="10" r="1.5"/></svg>'
+    +'<svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="1" y="1" width="20" height="10" rx="3" stroke="currentColor" stroke-opacity=".5"/><rect x="3" y="3" width="14.5" height="6" rx="1.5" fill="currentColor"/><rect x="22.6" y="4" width="1.6" height="4" rx=".7" fill="currentColor" fill-opacity=".55"/></svg>';
+  document.getElementById('sbicons').innerHTML = SB;
+
+  // per-window result lists + match counts
+  var WIN = {
+    ath: {label:'ATH', count:44, rows:[
+      {t:'APLAPOLLO',c:'APL Apollo Tubes',ltp:'2,265',h:'2,301',age:'197d',pct:'1.6'},
+      {t:'VIJIFIN',c:'Viji Finance',ltp:'14.75',h:'15.05',age:'2016',pct:'2.0'},
+      {t:'BAJAJ-AUTO',c:'Bajaj Auto',ltp:'11,910',h:'12,285',age:'700d',pct:'3.1'},
+      {t:'ICICIBANK',c:'ICICI Bank',ltp:'1,443',h:'1,476',age:'34d',pct:'2.2'} ]},
+    '1': {label:'1Y high', count:73, rows:[
+      {t:'EICHERMOT',c:'Eicher Motors',ltp:'8,042',h:'8,230',age:'174d',pct:'2.3'},
+      {t:'JAYSREETEA',c:'Jayshree Tea',ltp:'100.8',h:'103.3',age:'365d',pct:'2.4'},
+      {t:'PVRINOX',c:'PVR Inox',ltp:'1,219',h:'1,249',age:'294d',pct:'2.4'},
+      {t:'ENDURANCE',c:'Endurance Tech',ltp:'3,001',h:'3,079',age:'345d',pct:'2.5'},
+      {t:'ALKEM',c:'Alkem Labs',ltp:'5,368',h:'5,933',age:'213d',pct:'9.5'} ]},
+    '3': {label:'3Y high', count:45, rows:[
+      {t:'AKSHARCHEM',c:'AksharChem India',ltp:'365.6',h:'373.4',age:'395d',pct:'2.1'},
+      {t:'MANGLMCEM',c:'Mangalam Cement',ltp:'1,058',h:'1,089',age:'723d',pct:'2.9'},
+      {t:'GCSL',c:'Globe Civil',ltp:'96.4',h:'99.1',age:'358d',pct:'2.7'},
+      {t:'3MINDIA',c:'3M India',ltp:'35,340',h:'38,030',age:'185d',pct:'7.1'} ]},
+    '5': {label:'5Y high', count:43, rows:[
+      {t:'ATUL',c:'Atul Ltd',ltp:'6,729',h:'7,180',age:'99d',pct:'6.3'},
+      {t:'ASIANPAINT',c:'Asian Paints',ltp:'2,696',h:'2,985',age:'253d',pct:'9.7'},
+      {t:'ACE',c:'Action Constr.',ltp:'1,085',h:'1,170',age:'329d',pct:'7.2'} ]},
+    '10': {label:'10Y high', count:45, rows:[
+      {t:'HITECHCORP',c:'Hitech Corp',ltp:'336.3',h:'349.7',age:'318d',pct:'3.8'},
+      {t:'ANDHRSUGAR',c:'Andhra Sugars',ltp:'101.9',h:'107.2',age:'100d',pct:'4.9'} ]}
+  };
+  // detail data (falls back gracefully)
+  var DET = {
+    AKSHARCHEM:{c:'AksharChem India · Chemicals',ltp:'365.65',w:'373.36',wp:'2.1% away',ath:'889.56',ap:'58.9% away',vol:'8,352',band:'Band 5%'},
+    APLAPOLLO:{c:'APL Apollo Tubes · Steel',ltp:'2,265.60',w:'2,301.40',wp:'at ATH',ath:'2,301.40',ap:'1.6% away',vol:'701,222',band:'F&O'},
+    VIJIFIN:{c:'Viji Finance · NBFC',ltp:'14.75',w:'15.05',wp:'at ATH',ath:'15.05',ap:'2.0% away',vol:'130,376',band:'Band 5%'},
+    'BAJAJ-AUTO':{c:'Bajaj Auto · Auto',ltp:'11,910',w:'12,285',wp:'at ATH',ath:'12,285',ap:'3.1% away',vol:'228,099',band:'F&O'},
+    ICICIBANK:{c:'ICICI Bank · Banks',ltp:'1,443',w:'1,476',wp:'at ATH',ath:'1,476',ap:'2.2% away',vol:'9.8M',band:'F&O'}
+  };
+  var curWin='ath';
+
+  window.go=function(id){
+    document.querySelectorAll('.view').forEach(function(v){v.classList.remove('active')});
+    var el=document.getElementById('v-'+id); if(el) el.classList.add('active');
+    closeSheet();
+    el && el.querySelector('.content') && (el.querySelector('.content').scrollTop=0);
+  };
+  window.setWin=function(w){
+    curWin=w;
+    document.querySelectorAll('#chips .chip').forEach(function(c){c.classList.toggle('on', c.dataset.win===w)});
+    renderResults();
+  };
+  function renderResults(){
+    var d=WIN[curWin], html='';
+    document.getElementById('matchcount').textContent=d.count+' matches';
+    d.rows.forEach(function(r){
+      html+='<div class="rcard" onclick="openDetail(\''+r.t+'\')"><div class="rtop"><div><div class="tkr mono">'+r.t+'</div><div class="co">'+r.c+'</div></div>'
+        +'<span class="pill near">▲ '+r.pct+'% off '+d.label+'</span></div>'
+        +'<div class="rmid"><div class="stat"><div class="k">LTP</div><div class="v mono">'+r.ltp+'</div></div>'
+        +'<div class="stat"><div class="k">'+d.label+'</div><div class="v mono">'+r.h+'</div></div>'
+        +'<div class="stat"><div class="k">High age</div><div class="v mono">'+r.age+'</div></div></div></div>';
+    });
+    document.getElementById('results').innerHTML=html;
+  }
+  window.openDetail=function(t){
+    var d=DET[t]||{c:'—',ltp:'—',w:'—',wp:'',ath:'—',ap:'',vol:'—',band:''};
+    document.getElementById('d-tkr').textContent=t;
+    document.getElementById('d-co').textContent=d.c;
+    document.getElementById('d-ltp').textContent=d.ltp;
+    var wl = curWin==='ath' ? 'All-time high' : curWin+'-year high';
+    document.getElementById('d-sub').textContent='near its '+ (curWin==='ath'?'all-time high':curWin+'-year high');
+    document.getElementById('d-wlabel').textContent=wl;
+    document.getElementById('d-whigh').textContent=d.w;
+    document.getElementById('d-wpct').textContent=d.wp;
+    document.getElementById('d-ath').textContent=d.ath;
+    document.getElementById('d-athpct').textContent=d.ap;
+    document.getElementById('d-vol').textContent=d.vol;
+    document.getElementById('d-band').textContent=d.band;
+    document.getElementById('aa-tkr').textContent=t+' · ₹'+d.ltp;
+    go('detail');
+  };
+  window.openSheet=function(name){
+    document.getElementById('scrim').classList.add('show');
+    document.getElementById('sheet-'+name).classList.add('show');
+  };
+  window.closeSheet=function(){
+    document.getElementById('scrim').classList.remove('show');
+    document.querySelectorAll('.sheet').forEach(function(s){s.classList.remove('show')});
+  };
+  var tmr;
+  window.toast=function(msg){
+    var t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show');
+    clearTimeout(tmr); tmr=setTimeout(function(){t.classList.remove('show')},1600);
+  };
+  window.rearm=function(){
+    document.getElementById('pvr-pill').outerHTML='<span class="pill up" id="pvr-pill">● Active</span>';
+    document.getElementById('pvr-meta').textContent='Now ₹1,251 · re-armed';
+    document.getElementById('pvr-act').outerHTML='<span class="mono note">one-shot</span>';
+    toast('PVRINOX alert re-armed');
+  };
+
+  renderResults();
+  // splash auto-advance
+  var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(!reduce) setTimeout(function(){ if(document.getElementById('v-splash').classList.contains('active')) go('signin'); }, 1600);
+})();
+</script>
