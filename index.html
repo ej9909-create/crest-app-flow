@@ -1,0 +1,506 @@
+<title>Crest — NSE Pullback Screener · App Flow</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  /* ---------- Page (theme-aware gallery chrome) ---------- */
+  :root{
+    --page-bg:#EDEEF1; --panel:#F7F8FA; --ink:#14181F; --muted:#5C6470;
+    --line:#D8DBE1; --accent:#B57E00; --accent-soft:#F0E2BD;
+  }
+  @media (prefers-color-scheme:dark){
+    :root:not([data-theme="light"]){
+      --page-bg:#0A0C10; --panel:#12151C; --ink:#EDF1F7; --muted:#8A93A3;
+      --line:#20252F; --accent:#FFB020; --accent-soft:#3A2E12;
+    }
+  }
+  :root[data-theme="dark"]{
+    --page-bg:#0A0C10; --panel:#12151C; --ink:#EDF1F7; --muted:#8A93A3;
+    --line:#20252F; --accent:#FFB020; --accent-soft:#3A2E12;
+  }
+  /* ---------- App palette (fixed — the device screen is always the dark app) ---------- */
+  :root{
+    --bg:#0D1017; --surf:#161B24; --elev:#1E242F; --hair:#262D3A;
+    --tx:#EDF1F7; --mut:#838EA0; --dim:#5A6474;
+    --gold:#FFB020; --gold-dim:#3A2E12;
+    --up:#2ED09A; --up-dim:#123329; --down:#FF6B7D; --down-dim:#3A1620;
+    --blue:#5B8CFF;
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0; background:var(--page-bg); color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,sans-serif;
+    line-height:1.5; -webkit-font-smoothing:antialiased;
+  }
+  .mono{font-family:ui-monospace,"SF Mono","Menlo","Roboto Mono",monospace; font-variant-numeric:tabular-nums}
+  .wrap{max-width:1200px; margin:0 auto; padding:48px 24px 96px}
+
+  header.top{margin-bottom:8px}
+  .kicker{font-size:12px; letter-spacing:.18em; text-transform:uppercase; color:var(--accent); font-weight:700}
+  h1{font-size:clamp(26px,4.4vw,40px); line-height:1.08; margin:.35em 0 .15em; letter-spacing:-.02em; text-wrap:balance}
+  .lede{color:var(--muted); max-width:64ch; font-size:16px; margin:0}
+  .legend{display:flex; flex-wrap:wrap; gap:18px; margin-top:22px; padding-top:18px; border-top:1px solid var(--line); font-size:13px; color:var(--muted)}
+  .legend b{color:var(--ink); font-weight:600}
+  .swatch{display:inline-block; width:10px; height:10px; border-radius:3px; vertical-align:baseline; margin-right:6px}
+
+  /* Flow stage heading */
+  .stage{display:flex; align-items:baseline; gap:14px; margin:56px 0 22px}
+  .stage .no{font-family:ui-monospace,monospace; font-size:13px; font-weight:700; color:var(--accent);
+    border:1px solid var(--line); border-radius:8px; padding:4px 9px; background:var(--panel)}
+  .stage h2{font-size:20px; margin:0; letter-spacing:-.01em}
+  .stage p{margin:0; color:var(--muted); font-size:14px}
+
+  .grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:34px 26px; align-items:start}
+
+  .frame{display:flex; flex-direction:column; gap:12px}
+  .cap{font-size:13px; color:var(--muted)}
+  .cap b{display:block; color:var(--ink); font-size:14px; font-weight:600; margin-bottom:2px}
+
+  /* ---------- Phone ---------- */
+  .phone{
+    width:100%; max-width:320px; aspect-ratio:9/19.5; margin:0 auto;
+    background:var(--bg); border-radius:38px; padding:10px;
+    border:1px solid #2b2b31;
+    box-shadow:0 1px 0 rgba(255,255,255,.04) inset, 0 24px 50px -24px rgba(0,0,0,.7), 0 0 0 8px rgba(0,0,0,.25);
+    position:relative;
+  }
+  .screen{
+    position:absolute; inset:10px; border-radius:29px; overflow:hidden;
+    background:var(--bg); color:var(--tx); display:flex; flex-direction:column;
+    font-size:13px;
+  }
+  /* status bar */
+  .sb{height:34px; flex:0 0 34px; display:flex; align-items:center; justify-content:space-between;
+    padding:0 20px 0 22px; font-size:12px; font-weight:600; position:relative}
+  .sb .time{font-variant-numeric:tabular-nums}
+  .sb .isle{position:absolute; left:50%; top:8px; transform:translateX(-50%); width:78px; height:20px; background:#000; border-radius:12px}
+  .sb .icons{display:flex; gap:5px; align-items:center; color:var(--tx)}
+  .sb .icons svg{display:block}
+  /* app bar */
+  .ab{display:flex; align-items:center; justify-content:space-between; padding:6px 16px 10px}
+  .ab .title{font-size:17px; font-weight:700; letter-spacing:-.01em}
+  .ab .sub{font-size:11px; color:var(--mut)}
+  .av{width:30px; height:30px; border-radius:50%; background:linear-gradient(135deg,#2b3342,#1a1f29); display:grid; place-items:center; font-size:12px; font-weight:700; color:var(--tx); border:1px solid var(--hair)}
+  .body{flex:1; overflow:hidden; padding:0 14px; display:flex; flex-direction:column; gap:10px}
+  .body.pad{padding:6px 16px 16px}
+  .body.center{justify-content:center; align-items:center; text-align:center; gap:0}
+
+  /* bottom nav */
+  .bn{flex:0 0 58px; display:flex; border-top:1px solid var(--hair); background:var(--surf)}
+  .bn a{flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; color:var(--dim); font-size:10px; font-weight:600}
+  .bn a.on{color:var(--gold)}
+  .bn .ic{width:20px; height:20px; display:grid; place-items:center}
+  .bn svg{width:20px;height:20px}
+
+  /* generic ui atoms */
+  .chips{display:flex; gap:7px; overflow:hidden}
+  .chip{font-size:12px; font-weight:600; padding:6px 11px; border-radius:999px; background:var(--elev); color:var(--mut); border:1px solid var(--hair); white-space:nowrap}
+  .chip.on{background:var(--gold); color:#1a1300; border-color:var(--gold)}
+  .filterbar{display:flex; align-items:center; justify-content:space-between; gap:8px}
+  .fbtn{display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:600; color:var(--tx); background:var(--surf); border:1px solid var(--hair); padding:7px 11px; border-radius:10px}
+  .badge{font-size:10px; background:var(--gold); color:#1a1300; border-radius:999px; padding:1px 6px; font-weight:700}
+
+  .metarow{display:flex; align-items:center; justify-content:space-between; font-size:11px; color:var(--mut)}
+  .as-of{display:inline-flex; align-items:center; gap:5px}
+  .dot{width:6px;height:6px;border-radius:50%;background:var(--up); box-shadow:0 0 0 3px var(--up-dim)}
+
+  /* result card */
+  .rcard{background:var(--surf); border:1px solid var(--hair); border-radius:14px; padding:11px 12px; display:flex; flex-direction:column; gap:8px}
+  .rtop{display:flex; align-items:center; justify-content:space-between}
+  .tkr{font-size:14px; font-weight:700; letter-spacing:.01em}
+  .co{font-size:10px; color:var(--mut); margin-top:1px}
+  .pill{font-size:11px; font-weight:700; padding:3px 8px; border-radius:8px}
+  .pill.up{background:var(--up-dim); color:var(--up)}
+  .pill.near{background:var(--gold-dim); color:var(--gold)}
+  .rmid{display:flex; gap:6px}
+  .stat{flex:1; background:var(--bg); border:1px solid var(--hair); border-radius:9px; padding:6px 8px}
+  .stat .k{font-size:9px; color:var(--dim); text-transform:uppercase; letter-spacing:.06em}
+  .stat .v{font-size:12.5px; font-weight:700; margin-top:2px}
+  .spark{height:2px; border-radius:2px; background:linear-gradient(90deg,var(--hair),var(--up)); opacity:.8}
+
+  /* buttons */
+  .btn{display:flex; align-items:center; justify-content:center; gap:8px; width:100%; padding:13px; border-radius:13px; font-size:14px; font-weight:700; border:0; cursor:default}
+  .btn.gold{background:var(--gold); color:#1a1300}
+  .btn.ghost{background:var(--surf); color:var(--tx); border:1px solid var(--hair)}
+  .btn.google{background:#fff; color:#1f1f1f}
+  .btn.sm{padding:10px; font-size:13px}
+
+  .field{background:var(--surf); border:1px solid var(--hair); border-radius:12px; padding:11px 13px; display:flex; align-items:center; justify-content:space-between; font-size:13px}
+  .field .lab{color:var(--mut); font-size:11px}
+  .slider{height:4px; border-radius:4px; background:var(--hair); position:relative; margin:14px 4px 6px}
+  .slider .fill{position:absolute; height:100%; left:12%; right:34%; background:var(--gold); border-radius:4px}
+  .slider .kb{position:absolute; top:50%; width:16px; height:16px; border-radius:50%; background:#fff; transform:translate(-50%,-50%); box-shadow:0 2px 6px rgba(0,0,0,.4)}
+  .toggle{width:40px; height:24px; border-radius:999px; background:var(--gold); position:relative; flex:0 0 auto}
+  .toggle::after{content:""; position:absolute; top:3px; right:3px; width:18px; height:18px; border-radius:50%; background:#1a1300}
+  .toggle.off{background:var(--hair)}
+  .toggle.off::after{left:3px; right:auto; background:var(--mut)}
+
+  .sheet{margin-top:auto; background:var(--surf); border:1px solid var(--hair); border-bottom:0;
+    border-radius:20px 20px 0 0; padding:8px 16px 18px; display:flex; flex-direction:column; gap:12px}
+  .grab{width:36px; height:4px; border-radius:4px; background:var(--hair); margin:2px auto 6px}
+
+  .mark{width:64px; height:64px; border-radius:18px; background:linear-gradient(160deg,#1c222d,#11151d);
+    border:1px solid var(--hair); display:grid; place-items:center; box-shadow:0 10px 30px -10px rgba(255,176,32,.35)}
+  .big-num{font-size:44px; font-weight:800; letter-spacing:-.03em; line-height:1}
+
+  .note{font-size:11px; color:var(--mut)}
+  .divider{height:1px; background:var(--hair); margin:2px 0}
+  .row{display:flex; align-items:center; justify-content:space-between; gap:10px}
+  .tierlist{display:flex; flex-direction:column; gap:8px; font-size:12px}
+  .tierlist .li{display:flex; gap:8px; align-items:flex-start; color:var(--tx)}
+  .tierlist .li svg{flex:0 0 auto; margin-top:2px}
+  .lock{display:inline-flex; align-items:center; gap:5px; font-size:11px; color:var(--gold); background:var(--gold-dim); padding:3px 8px; border-radius:8px; font-weight:700}
+
+  footer{margin-top:64px; padding-top:22px; border-top:1px solid var(--line); color:var(--muted); font-size:13px}
+  a.link{color:var(--accent); text-decoration:none; font-weight:600}
+  @media (prefers-reduced-motion:no-preference){ .phone{transition:transform .2s ease} .frame:hover .phone{transform:translateY(-4px)} }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="kicker">Product design · v0 screen flow</div>
+    <h1>Crest — the NSE pullback screener, as an Android app</h1>
+    <p class="lede">Every screen for the whole journey: invite-only access for the first cohort, the all-time / N-year high screener at the core, one-shot price alerts, and the upgrade wall that switches on later. Real data throughout — the same ATH-vs-N-year logic and same-day Angel feed the web app runs today.</p>
+    <div class="legend">
+      <span><span class="swatch" style="background:var(--gold)"></span><b>Peak-gold</b> — brand / primary action</span>
+      <span><span class="swatch" style="background:var(--up)"></span><b>Green</b> — near the high / gains</span>
+      <span><span class="swatch" style="background:var(--down)"></span><b>Red</b> — drawdown</span>
+      <span><b>Name “Crest”</b> is a working title — swap freely</span>
+    </div>
+  </header>
+
+  <!-- STAGE 1 -->
+  <div class="stage">
+    <span class="no">01</span>
+    <div><h2>Get in — invite-only to start</h2><p>Launch → Google sign-in → whitelist check. Not on the list yet? A waitlist screen, not a dead end.</p></div>
+  </div>
+  <div class="grid">
+
+    <!-- Splash -->
+    <div class="frame">
+      <div class="phone"><div class="screen">
+        <div class="sb"><span class="time mono">16:07</span><span class="isle"></span><span class="icons"><svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.7" y="5" width="3" height="6" rx="1"/><rect x="9.4" y="2.5" width="3" height="8.5" rx="1"/><rect x="14" y="0" width="3" height="11" rx="1"/></svg><svg width="16" height="11" viewBox="0 0 16 12" fill="currentColor"><path d="M8 2.6c2.3 0 4.4.9 6 2.4l1.4-1.5A11 11 0 0 0 8 .4 11 11 0 0 0 .6 3.5L2 5A8.6 8.6 0 0 1 8 2.6z"/><path d="M8 6.1c1.3 0 2.5.5 3.4 1.4l1.4-1.5A7 7 0 0 0 8 4a7 7 0 0 0-4.8 2l1.4 1.5A4.8 4.8 0 0 1 8 6.1z"/><circle cx="8" cy="10" r="1.5"/></svg><svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="1" y="1" width="20" height="10" rx="3" stroke="currentColor" stroke-opacity=".5"/><rect x="3" y="3" width="14.5" height="6" rx="1.5" fill="currentColor"/><rect x="22.6" y="4" width="1.6" height="4" rx=".7" fill="currentColor" fill-opacity=".55"/></svg></span></div>
+        <div class="body center">
+          <div class="mark"><svg width="34" height="34" viewBox="0 0 34 34" fill="none"><path d="M4 26 L12 16 L18 21 L26 7 L30 12" stroke="#FFB020" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><circle cx="26" cy="7" r="2.6" fill="#FFB020"/></svg></div>
+          <div style="height:18px"></div>
+          <div style="font-size:26px; font-weight:800; letter-spacing:-.02em">Crest</div>
+          <div class="note" style="margin-top:6px; max-width:20ch">Stocks perched near their peak, pulled back.</div>
+          <div style="position:absolute; bottom:26px; left:0; right:0" class="note">NSE · main board &amp; SME</div>
+        </div>
+      </div></div>
+      <div class="cap"><b>Splash</b>Brand moment while the session token &amp; snapshot load.</div>
+    </div>
+
+    <!-- Sign in -->
+    <div class="frame">
+      <div class="phone"><div class="screen">
+        <div class="sb"><span class="time mono">16:07</span><span class="isle"></span><span class="icons"><svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.7" y="5" width="3" height="6" rx="1"/><rect x="9.4" y="2.5" width="3" height="8.5" rx="1"/><rect x="14" y="0" width="3" height="11" rx="1"/></svg><svg width="16" height="11" viewBox="0 0 16 12" fill="currentColor"><path d="M8 2.6c2.3 0 4.4.9 6 2.4l1.4-1.5A11 11 0 0 0 8 .4 11 11 0 0 0 .6 3.5L2 5A8.6 8.6 0 0 1 8 2.6z"/><path d="M8 6.1c1.3 0 2.5.5 3.4 1.4l1.4-1.5A7 7 0 0 0 8 4a7 7 0 0 0-4.8 2l1.4 1.5A4.8 4.8 0 0 1 8 6.1z"/><circle cx="8" cy="10" r="1.5"/></svg><svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="1" y="1" width="20" height="10" rx="3" stroke="currentColor" stroke-opacity=".5"/><rect x="3" y="3" width="14.5" height="6" rx="1.5" fill="currentColor"/><rect x="22.6" y="4" width="1.6" height="4" rx=".7" fill="currentColor" fill-opacity=".55"/></svg></span></div>
+        <div class="body pad" style="justify-content:center; gap:16px">
+          <div class="mark" style="width:48px;height:48px;border-radius:14px"><svg width="26" height="26" viewBox="0 0 34 34" fill="none"><path d="M4 26 L12 16 L18 21 L26 7 L30 12" stroke="#FFB020" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="26" cy="7" r="2.4" fill="#FFB020"/></svg></div>
+          <div>
+            <div style="font-size:22px; font-weight:800; letter-spacing:-.02em">Welcome back</div>
+            <div class="note" style="margin-top:6px">Sign in to run the screener and manage your alerts.</div>
+          </div>
+          <div style="height:6px"></div>
+          <div class="btn google"><svg width="16" height="16" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.6l6.8-6.8C35.6 2.4 30.2 0 24 0 14.6 0 6.5 5.4 2.6 13.2l7.9 6.2C12.4 13.6 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.1 24.5c0-1.6-.1-3.2-.4-4.7H24v9h12.4c-.5 2.9-2.1 5.3-4.6 7l7.2 5.6C43.6 37.5 46.1 31.6 46.1 24.5z"/><path fill="#FBBC05" d="M10.5 28.4a14.5 14.5 0 0 1 0-8.9l-7.9-6.2A24 24 0 0 0 0 24c0 3.9.9 7.5 2.6 10.7l7.9-6.3z"/><path fill="#34A853" d="M24 48c6.2 0 11.5-2 15.3-5.6l-7.2-5.6c-2 1.4-4.6 2.2-8.1 2.2-6.3 0-11.6-4.1-13.5-9.7l-7.9 6.3C6.5 42.6 14.6 48 24 48z"/></svg>&nbsp; Continue with Google</div>
+          <div class="btn ghost">Continue with email</div>
+          <div class="row" style="margin-top:2px"><div class="divider" style="flex:1"></div><span class="note">invite-only</span><div class="divider" style="flex:1"></div></div>
+          <div class="note" style="text-align:center">Access is limited to the early cohort. <span style="color:var(--gold)">Have a code?</span></div>
+        </div>
+      </div></div>
+      <div class="cap"><b>Sign in</b>Google-first (Play Store norm) + email fallback.</div>
+    </div>
+
+    <!-- Waitlist -->
+    <div class="frame">
+      <div class="phone"><div class="screen">
+        <div class="sb"><span class="time mono">16:07</span><span class="isle"></span><span class="icons"><svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.7" y="5" width="3" height="6" rx="1"/><rect x="9.4" y="2.5" width="3" height="8.5" rx="1"/><rect x="14" y="0" width="3" height="11" rx="1"/></svg><svg width="16" height="11" viewBox="0 0 16 12" fill="currentColor"><path d="M8 2.6c2.3 0 4.4.9 6 2.4l1.4-1.5A11 11 0 0 0 8 .4 11 11 0 0 0 .6 3.5L2 5A8.6 8.6 0 0 1 8 2.6z"/><path d="M8 6.1c1.3 0 2.5.5 3.4 1.4l1.4-1.5A7 7 0 0 0 8 4a7 7 0 0 0-4.8 2l1.4 1.5A4.8 4.8 0 0 1 8 6.1z"/><circle cx="8" cy="10" r="1.5"/></svg><svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="1" y="1" width="20" height="10" rx="3" stroke="currentColor" stroke-opacity=".5"/><rect x="3" y="3" width="14.5" height="6" rx="1.5" fill="currentColor"/><rect x="22.6" y="4" width="1.6" height="4" rx=".7" fill="currentColor" fill-opacity=".55"/></svg></span></div>
+        <div class="body pad" style="justify-content:center; gap:14px; text-align:center; align-items:center">
+          <div style="width:56px;height:56px;border-radius:16px;background:var(--gold-dim);display:grid;place-items:center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FFB020" stroke-width="1.7" stroke-linejoin="round" stroke-linecap="round"><path d="M6 2h12v3l-5 7 5 7v3H6v-3l5-7-5-7V2z"/></svg></div>
+          <div style="font-size:20px; font-weight:800; letter-spacing:-.01em">You’re on the list</div>
+          <div class="note" style="max-width:26ch">abhilash@blackbuck.com is queued for access. We’re onboarding the first group in small batches.</div>
+          <div class="field" style="width:100%; text-align:left"><span><span class="lab">Have an invite code?</span><br><span class="mono" style="color:var(--dim)">— — — — — —</span></span><span class="badge">Redeem</span></div>
+          <div class="btn ghost sm" style="width:100%">Notify me when I’m in</div>
+        </div>
+      </div></div>
+      <div class="cap"><b>Waitlist / access gate</b>Shown when the account isn’t whitelisted. Invite-code redemption for referrals.</div>
+    </div>
+  </div>
+
+  <!-- STAGE 2 -->
+  <div class="stage">
+    <span class="no">02</span>
+    <div><h2>The screener — the whole reason they’re here</h2><p>All-time / N-year high window, the four filters, instant results from the same-day snapshot, tap through to detail.</p></div>
+  </div>
+  <div class="grid">
+
+    <!-- Screener home -->
+    <div class="frame">
+      <div class="phone"><div class="screen">
+        <div class="sb"><span class="time mono">16:07</span><span class="isle"></span><span class="icons"><svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.7" y="5" width="3" height="6" rx="1"/><rect x="9.4" y="2.5" width="3" height="8.5" rx="1"/><rect x="14" y="0" width="3" height="11" rx="1"/></svg><svg width="16" height="11" viewBox="0 0 16 12" fill="currentColor"><path d="M8 2.6c2.3 0 4.4.9 6 2.4l1.4-1.5A11 11 0 0 0 8 .4 11 11 0 0 0 .6 3.5L2 5A8.6 8.6 0 0 1 8 2.6z"/><path d="M8 6.1c1.3 0 2.5.5 3.4 1.4l1.4-1.5A7 7 0 0 0 8 4a7 7 0 0 0-4.8 2l1.4 1.5A4.8 4.8 0 0 1 8 6.1z"/><circle cx="8" cy="10" r="1.5"/></svg><svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="1" y="1" width="20" height="10" rx="3" stroke="currentColor" stroke-opacity=".5"/><rect x="3" y="3" width="14.5" height="6" rx="1.5" fill="currentColor"/><rect x="22.6" y="4" width="1.6" height="4" rx=".7" fill="currentColor" fill-opacity=".55"/></svg></span></div>
+        <div class="ab">
+          <div><div class="title">Screener</div><div class="sub as-of"><span class="dot"></span> As of 28 Aug · live 16:07</div></div>
+          <div class="av">AS</div>
+        </div>
+        <div class="body">
+          <div class="chips">
+            <span class="chip on">All-time</span><span class="chip">1Y</span><span class="chip">3Y</span><span class="chip">5Y</span><span class="chip">10Y</span>
+          </div>
+          <div class="filterbar">
+            <span class="fbtn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5h18l-7 8v6l-4-2v-4L3 5z"/></svg> Filters <span class="badge">2</span></span>
+            <span class="note mono">44 matches</span>
+          </div>
+          <!-- cards -->
+          <div class="rcard">
+            <div class="rtop"><div><div class="tkr mono">APLAPOLLO</div><div class="co">APL Apollo Tubes</div></div><span class="pill near">▲ 1.6% off ATH</span></div>
+            <div class="rmid">
+              <div class="stat"><div class="k">LTP</div><div class="v mono">2,265</div></div>
+              <div class="stat"><div class="k">All-time high</div><div class="v mono">2,301</div></div>
+              <div class="stat"><div class="k">High age</div><div class="v mono">197d</div></div>
+            </div>
+          </div>
+          <div class="rcard">
+            <div class="rtop"><div><div class="tkr mono">VIJIFIN</div><div class="co">Viji Finance</div></div><span class="pill near">▲ 2.0% off ATH</span></div>
+            <div class="rmid">
+              <div class="stat"><div class="k">LTP</div><div class="v mono">14.75</div></div>
+              <div class="stat"><div class="k">All-time high</div><div class="v mono">15.05</div></div>
+              <div class="stat"><div class="k">High age</div><div class="v mono">2016</div></div>
+            </div>
+          </div>
+          <div class="rcard">
+            <div class="rtop"><div><div class="tkr mono">BAJAJ-AUTO</div><div class="co">Bajaj Auto</div></div><span class="pill near">▲ 3.1% off ATH</span></div>
+            <div class="rmid">
+              <div class="stat"><div class="k">LTP</div><div class="v mono">11,910</div></div>
+              <div class="stat"><div class="k">All-time high</div><div class="v mono">12,285</div></div>
+              <div class="stat"><div class="k">High age</div><div class="v mono">700d</div></div>
+            </div>
+          </div>
+        </div>
+        <div class="bn">
+          <a class="on"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V5M4 15l5-5 4 3 7-8"/></svg></span>Screener</a>
+          <a><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6M10 20a2 2 0 0 0 4 0"/></svg></span>Alerts</a>
+          <a><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.4"/><path d="M5 20a7 7 0 0 1 14 0"/></svg></span>Account</a>
+        </div>
+      </div></div>
+      <div class="cap"><b>Screener · home</b>The hero. Window chips up top, filter entry, ranked result cards (closest to the high first).</div>
+    </div>
+
+    <!-- Filters sheet -->
+    <div class="frame">
+      <div class="phone"><div class="screen">
+        <div class="sb"><span class="time mono">16:07</span><span class="isle"></span><span class="icons"><svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.7" y="5" width="3" height="6" rx="1"/><rect x="9.4" y="2.5" width="3" height="8.5" rx="1"/><rect x="14" y="0" width="3" height="11" rx="1"/></svg><svg width="16" height="11" viewBox="0 0 16 12" fill="currentColor"><path d="M8 2.6c2.3 0 4.4.9 6 2.4l1.4-1.5A11 11 0 0 0 8 .4 11 11 0 0 0 .6 3.5L2 5A8.6 8.6 0 0 1 8 2.6z"/><path d="M8 6.1c1.3 0 2.5.5 3.4 1.4l1.4-1.5A7 7 0 0 0 8 4a7 7 0 0 0-4.8 2l1.4 1.5A4.8 4.8 0 0 1 8 6.1z"/><circle cx="8" cy="10" r="1.5"/></svg><svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="1" y="1" width="20" height="10" rx="3" stroke="currentColor" stroke-opacity=".5"/><rect x="3" y="3" width="14.5" height="6" rx="1.5" fill="currentColor"/><rect x="22.6" y="4" width="1.6" height="4" rx=".7" fill="currentColor" fill-opacity=".55"/></svg></span></div>
+        <div class="ab"><div class="title" style="opacity:.35">Screener</div><div class="av" style="opacity:.35">AS</div></div>
+        <div class="body" style="opacity:.28; filter:blur(1px)">
+          <div class="chips"><span class="chip on">All-time</span><span class="chip">3Y</span></div>
+          <div class="rcard" style="height:70px"></div><div class="rcard" style="height:70px"></div>
+        </div>
+        <div class="sheet">
+          <div class="grab"></div>
+          <div class="row"><div style="font-weight:700; font-size:15px">Filters</div><span class="note" style="color:var(--gold)">Reset</span></div>
+          <div>
+            <div class="row"><span class="lab" style="color:var(--mut); font-size:12px">High older than</span><span class="mono">90 days</span></div>
+            <div class="slider"><span class="fill" style="left:8%; right:60%"></span><span class="kb" style="left:40%"></span></div>
+          </div>
+          <div>
+            <div class="row"><span class="lab" style="color:var(--mut); font-size:12px">Pullback band</span><span class="mono">1 – 10%</span></div>
+            <div class="slider"><span class="fill"></span><span class="kb" style="left:12%"></span><span class="kb" style="left:66%"></span></div>
+          </div>
+          <div class="field"><span>Futures-enabled (F&amp;O) only</span><span class="toggle off"></span></div>
+          <div class="field"><span>Qty + Upper circuit 20%</span><span class="toggle off"></span></div>
+          <div class="field"><span>Listing window <span class="mono" style="color:var(--dim)">3–12 mo</span></span><span class="toggle"></span></div>
+          <div class="btn gold sm">Show 44 results</div>
+        </div>
+      </div></div>
+      <div class="cap"><b>Filters · bottom sheet</b>The four filters from the web app — pullback band, high-age, F&amp;O, Qty+Circuit, Listing — as touch controls.</div>
+    </div>
+
+    <!-- Stock detail -->
+    <div class="frame">
+      <div class="phone"><div class="screen">
+        <div class="sb"><span class="time mono">16:07</span><span class="isle"></span><span class="icons"><svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.7" y="5" width="3" height="6" rx="1"/><rect x="9.4" y="2.5" width="3" height="8.5" rx="1"/><rect x="14" y="0" width="3" height="11" rx="1"/></svg><svg width="16" height="11" viewBox="0 0 16 12" fill="currentColor"><path d="M8 2.6c2.3 0 4.4.9 6 2.4l1.4-1.5A11 11 0 0 0 8 .4 11 11 0 0 0 .6 3.5L2 5A8.6 8.6 0 0 1 8 2.6z"/><path d="M8 6.1c1.3 0 2.5.5 3.4 1.4l1.4-1.5A7 7 0 0 0 8 4a7 7 0 0 0-4.8 2l1.4 1.5A4.8 4.8 0 0 1 8 6.1z"/><circle cx="8" cy="10" r="1.5"/></svg><svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="1" y="1" width="20" height="10" rx="3" stroke="currentColor" stroke-opacity=".5"/><rect x="3" y="3" width="14.5" height="6" rx="1.5" fill="currentColor"/><rect x="22.6" y="4" width="1.6" height="4" rx=".7" fill="currentColor" fill-opacity=".55"/></svg></span></div>
+        <div class="ab"><span class="fbtn" style="border:0;background:transparent;padding-left:0">‹ Back</span><span class="fbtn" style="border:0;background:transparent"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="M8.2 10.8l7.6-4.4M8.2 13.2l7.6 4.4"/></svg></span></div>
+        <div class="body">
+          <div>
+            <div class="tkr mono" style="font-size:18px">AKSHARCHEM</div>
+            <div class="co" style="font-size:11px">AksharChem India · Chemicals</div>
+          </div>
+          <div class="row" style="align-items:flex-end">
+            <div><div class="big-num mono">365.65</div><div class="note" style="color:var(--up)">▲ 2.07% from 3-year high</div></div>
+            <div style="text-align:right"><div class="note">Angel · 16:07</div></div>
+          </div>
+          <div style="height:64px; display:flex; align-items:flex-end; gap:0">
+            <svg viewBox="0 0 300 64" width="100%" height="64" preserveAspectRatio="none">
+              <polyline points="0,50 30,46 60,52 90,40 120,44 150,30 180,34 210,18 240,26 270,12 300,16"
+                fill="none" stroke="var(--up)" stroke-width="2"/>
+              <polyline points="0,50 30,46 60,52 90,40 120,44 150,30 180,34 210,18 240,26 270,12 300,16 300,64 0,64"
+                fill="url(#g)" opacity=".18" stroke="none"/>
+              <defs><linearGradient id="g" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#2ED09A"/><stop offset="1" stop-color="#2ED09A" stop-opacity="0"/></linearGradient></defs>
+            </svg>
+          </div>
+          <div class="rmid">
+            <div class="stat"><div class="k">3-year high</div><div class="v mono" style="color:var(--up)">373.36</div><div class="note" style="font-size:9px">2.1% away</div></div>
+            <div class="stat"><div class="k">All-time high</div><div class="v mono" style="color:var(--gold)">889.56</div><div class="note" style="font-size:9px">58.9% away</div></div>
+            <div class="stat"><div class="k">Avg vol 20d</div><div class="v mono">8,352</div><div class="note" style="font-size:9px">Band 5%</div></div>
+          </div>
+          <div class="btn gold sm"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6M10 20a2 2 0 0 0 4 0"/></svg>&nbsp; Set price alert</div>
+        </div>
+      </div></div>
+      <div class="cap"><b>Stock detail</b>Both highs side-by-side — near its 3-yr high but 59% below ATH. One tap to an alert.</div>
+    </div>
+  </div>
+
+  <!-- STAGE 3 -->
+  <div class="stage">
+    <span class="no">03</span>
+    <div><h2>Alerts — fire once, then rest</h2><p>The one-shot alert model already running on the GCP alerter, now with a native list + add sheet and push notifications.</p></div>
+  </div>
+  <div class="grid">
+
+    <!-- Alerts list -->
+    <div class="frame">
+      <div class="phone"><div class="screen">
+        <div class="sb"><span class="time mono">16:07</span><span class="isle"></span><span class="icons"><svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.7" y="5" width="3" height="6" rx="1"/><rect x="9.4" y="2.5" width="3" height="8.5" rx="1"/><rect x="14" y="0" width="3" height="11" rx="1"/></svg><svg width="16" height="11" viewBox="0 0 16 12" fill="currentColor"><path d="M8 2.6c2.3 0 4.4.9 6 2.4l1.4-1.5A11 11 0 0 0 8 .4 11 11 0 0 0 .6 3.5L2 5A8.6 8.6 0 0 1 8 2.6z"/><path d="M8 6.1c1.3 0 2.5.5 3.4 1.4l1.4-1.5A7 7 0 0 0 8 4a7 7 0 0 0-4.8 2l1.4 1.5A4.8 4.8 0 0 1 8 6.1z"/><circle cx="8" cy="10" r="1.5"/></svg><svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="1" y="1" width="20" height="10" rx="3" stroke="currentColor" stroke-opacity=".5"/><rect x="3" y="3" width="14.5" height="6" rx="1.5" fill="currentColor"/><rect x="22.6" y="4" width="1.6" height="4" rx=".7" fill="currentColor" fill-opacity=".55"/></svg></span></div>
+        <div class="ab"><div><div class="title">Price alerts</div><div class="sub">Real-time · via Telegram + push</div></div><div class="av">AS</div></div>
+        <div class="body">
+          <div class="rcard"><div class="rtop"><div><div class="tkr mono">RELIANCE</div><div class="co">Above ₹1,320</div></div><span class="pill up">● Active</span></div>
+            <div class="metarow"><span>Now ₹1,287 · 2.5% to go</span><span class="mono">one-shot</span></div></div>
+          <div class="rcard"><div class="rtop"><div><div class="tkr mono">PVRINOX</div><div class="co">Above ₹1,250</div></div><span class="pill near">✓ Triggered</span></div>
+            <div class="metarow"><span>Hit ₹1,251 · 27 Aug 14:02</span><span style="color:var(--gold)">Re-arm</span></div></div>
+          <div class="rcard"><div class="rtop"><div><div class="tkr mono">TATAMOTORS</div><div class="co">Below ₹900</div></div><span class="pill up">● Active</span></div>
+            <div class="metarow"><span>Now ₹947 · 5.2% to go</span><span class="mono">one-shot</span></div></div>
+          <div style="margin-top:auto; margin-bottom:6px"><div class="btn gold sm">＋ Add alert</div></div>
+        </div>
+        <div class="bn">
+          <a><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V5M4 15l5-5 4 3 7-8"/></svg></span>Screener</a>
+          <a class="on"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6M10 20a2 2 0 0 0 4 0"/></svg></span>Alerts</a>
+          <a><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.4"/><path d="M5 20a7 7 0 0 1 14 0"/></svg></span>Account</a>
+        </div>
+      </div></div>
+      <div class="cap"><b>Alerts</b>Active vs. Triggered chips; a triggered one-shot shows a <b>Re-arm</b> action — matches the alerter.</div>
+    </div>
+
+    <!-- Add alert sheet -->
+    <div class="frame">
+      <div class="phone"><div class="screen">
+        <div class="sb"><span class="time mono">16:07</span><span class="isle"></span><span class="icons"><svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.7" y="5" width="3" height="6" rx="1"/><rect x="9.4" y="2.5" width="3" height="8.5" rx="1"/><rect x="14" y="0" width="3" height="11" rx="1"/></svg><svg width="16" height="11" viewBox="0 0 16 12" fill="currentColor"><path d="M8 2.6c2.3 0 4.4.9 6 2.4l1.4-1.5A11 11 0 0 0 8 .4 11 11 0 0 0 .6 3.5L2 5A8.6 8.6 0 0 1 8 2.6z"/><path d="M8 6.1c1.3 0 2.5.5 3.4 1.4l1.4-1.5A7 7 0 0 0 8 4a7 7 0 0 0-4.8 2l1.4 1.5A4.8 4.8 0 0 1 8 6.1z"/><circle cx="8" cy="10" r="1.5"/></svg><svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="1" y="1" width="20" height="10" rx="3" stroke="currentColor" stroke-opacity=".5"/><rect x="3" y="3" width="14.5" height="6" rx="1.5" fill="currentColor"/><rect x="22.6" y="4" width="1.6" height="4" rx=".7" fill="currentColor" fill-opacity=".55"/></svg></span></div>
+        <div class="ab"><div class="title" style="opacity:.35">Price alerts</div></div>
+        <div class="body" style="opacity:.28; filter:blur(1px)"><div class="rcard" style="height:64px"></div><div class="rcard" style="height:64px"></div></div>
+        <div class="sheet">
+          <div class="grab"></div>
+          <div class="row"><div style="font-weight:700; font-size:15px">New alert</div><span class="note mono">RELIANCE · ₹1,287</span></div>
+          <div class="field"><span class="lab" style="color:var(--mut)">Trigger when price is</span><span style="font-weight:700">Above ▾</span></div>
+          <div class="field"><span class="lab" style="color:var(--mut)">Level</span><span class="mono" style="font-size:16px; font-weight:700">₹ 1,320.00</span></div>
+          <div class="field"><span>Note <span class="note">(optional)</span></span><span class="note">Breakout watch</span></div>
+          <div class="row"><span class="lock"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6M10 20a2 2 0 0 0 4 0"/></svg> Fires once, then retires</span><span class="note">Re-arm anytime</span></div>
+          <div class="btn gold sm">Create alert</div>
+        </div>
+      </div></div>
+      <div class="cap"><b>Add alert · sheet</b>Above/below + level, prefilled from the live quote. One-shot behaviour stated up front.</div>
+    </div>
+
+    <!-- Push notification -->
+    <div class="frame">
+      <div class="phone"><div class="screen">
+        <div class="sb" style="color:#fff"><span class="time mono">16:07</span><span class="isle"></span><span class="icons"><svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.7" y="5" width="3" height="6" rx="1"/><rect x="9.4" y="2.5" width="3" height="8.5" rx="1"/><rect x="14" y="0" width="3" height="11" rx="1"/></svg><svg width="16" height="11" viewBox="0 0 16 12" fill="currentColor"><path d="M8 2.6c2.3 0 4.4.9 6 2.4l1.4-1.5A11 11 0 0 0 8 .4 11 11 0 0 0 .6 3.5L2 5A8.6 8.6 0 0 1 8 2.6z"/><path d="M8 6.1c1.3 0 2.5.5 3.4 1.4l1.4-1.5A7 7 0 0 0 8 4a7 7 0 0 0-4.8 2l1.4 1.5A4.8 4.8 0 0 1 8 6.1z"/><circle cx="8" cy="10" r="1.5"/></svg><svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="1" y="1" width="20" height="10" rx="3" stroke="currentColor" stroke-opacity=".5"/><rect x="3" y="3" width="14.5" height="6" rx="1.5" fill="currentColor"/><rect x="22.6" y="4" width="1.6" height="4" rx=".7" fill="currentColor" fill-opacity=".55"/></svg></span></div>
+        <div class="body" style="background:radial-gradient(120% 90% at 50% 0,#1a2330,#0d1017); justify-content:flex-start; gap:14px; padding-top:8px">
+          <div style="text-align:center; margin-top:10px"><div class="mono" style="font-size:54px; font-weight:300; letter-spacing:-.03em">16:07</div><div class="note">Friday, 28 August</div></div>
+          <div class="rcard" style="background:rgba(30,36,47,.82); backdrop-filter:blur(6px)">
+            <div class="rtop"><div style="display:flex; gap:8px; align-items:center"><div class="mark" style="width:26px;height:26px;border-radius:8px;box-shadow:none"><svg width="15" height="15" viewBox="0 0 34 34" fill="none"><path d="M4 26 L12 16 L18 21 L26 7 L30 12" stroke="#FFB020" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span style="font-weight:700; font-size:12px">Crest</span></div><span class="note">now</span></div>
+            <div style="font-size:13px; font-weight:700">🔔 PVRINOX hit ₹1,251</div>
+            <div class="note">Your alert “Above ₹1,250” triggered. Tap to view — this alert has now retired.</div>
+          </div>
+          <div class="rcard" style="background:rgba(30,36,47,.5)">
+            <div class="rtop"><div style="display:flex; gap:8px; align-items:center"><div class="mark" style="width:26px;height:26px;border-radius:8px;box-shadow:none"><svg width="15" height="15" viewBox="0 0 34 34" fill="none"><path d="M4 26 L12 16 L18 21 L26 7 L30 12" stroke="#FFB020" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span style="font-weight:700; font-size:12px">Crest</span></div><span class="note">16:10</span></div>
+            <div style="font-size:13px; font-weight:700">Snapshot refreshed · 28 Aug</div>
+            <div class="note">44 stocks near their all-time high today.</div>
+          </div>
+        </div>
+      </div></div>
+      <div class="cap"><b>Push notification</b>Lock-screen delivery (FCM) — the trigger and the daily same-day refresh.</div>
+    </div>
+  </div>
+
+  <!-- STAGE 4 -->
+  <div class="stage">
+    <span class="no">04</span>
+    <div><h2>Upgrade &amp; account — the wall, switched on later</h2><p>Free stays useful; Pro unlocks the multi-year windows, unlimited alerts and the F&amp;O/circuit filters. Play Billing subscription.</p></div>
+  </div>
+  <div class="grid">
+
+    <!-- Paywall -->
+    <div class="frame">
+      <div class="phone"><div class="screen">
+        <div class="sb"><span class="time mono">16:07</span><span class="isle"></span><span class="icons"><svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.7" y="5" width="3" height="6" rx="1"/><rect x="9.4" y="2.5" width="3" height="8.5" rx="1"/><rect x="14" y="0" width="3" height="11" rx="1"/></svg><svg width="16" height="11" viewBox="0 0 16 12" fill="currentColor"><path d="M8 2.6c2.3 0 4.4.9 6 2.4l1.4-1.5A11 11 0 0 0 8 .4 11 11 0 0 0 .6 3.5L2 5A8.6 8.6 0 0 1 8 2.6z"/><path d="M8 6.1c1.3 0 2.5.5 3.4 1.4l1.4-1.5A7 7 0 0 0 8 4a7 7 0 0 0-4.8 2l1.4 1.5A4.8 4.8 0 0 1 8 6.1z"/><circle cx="8" cy="10" r="1.5"/></svg><svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="1" y="1" width="20" height="10" rx="3" stroke="currentColor" stroke-opacity=".5"/><rect x="3" y="3" width="14.5" height="6" rx="1.5" fill="currentColor"/><rect x="22.6" y="4" width="1.6" height="4" rx=".7" fill="currentColor" fill-opacity=".55"/></svg></span></div>
+        <div class="ab"><span class="fbtn" style="border:0;background:transparent;padding-left:0">✕</span><span class="lock"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M2 7l4.5 3.5L12 3l5.5 7.5L22 7l-2 13H4L2 7z"/></svg> Crest Pro</span></div>
+        <div class="body pad">
+          <div style="font-size:21px; font-weight:800; letter-spacing:-.01em; text-wrap:balance">Screen deeper.<br>Never miss the move.</div>
+          <div class="tierlist" style="margin-top:12px">
+            <div class="li"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#2ED09A" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span>Any <b>N-year &amp; all-time</b> high window</span></div>
+            <div class="li"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#2ED09A" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span><b>Unlimited</b> one-shot price alerts</span></div>
+            <div class="li"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#2ED09A" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span>F&amp;O + <b>Upper-circuit 20%</b> filters</span></div>
+            <div class="li"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#2ED09A" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span>CSV / Excel export</span></div>
+          </div>
+          <div style="height:6px"></div>
+          <div class="field" style="border-color:var(--gold); background:var(--gold-dim)"><span><b>Yearly</b> <span class="badge">2 months free</span><br><span class="note">₹1,499 / yr · ₹125/mo</span></span><span class="mono" style="font-weight:700">✓</span></div>
+          <div class="field"><span><b>Monthly</b><br><span class="note">₹149 / mo</span></span></div>
+          <div class="btn gold">Start 7-day free trial</div>
+          <div class="note" style="text-align:center">Billed via Google Play · cancel anytime</div>
+        </div>
+      </div></div>
+      <div class="cap"><b>Paywall</b>Free→Pro. Trial + yearly/monthly through Google Play Billing. Dormant for the first cohort.</div>
+    </div>
+
+    <!-- Account -->
+    <div class="frame">
+      <div class="phone"><div class="screen">
+        <div class="sb"><span class="time mono">16:07</span><span class="isle"></span><span class="icons"><svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.7" y="5" width="3" height="6" rx="1"/><rect x="9.4" y="2.5" width="3" height="8.5" rx="1"/><rect x="14" y="0" width="3" height="11" rx="1"/></svg><svg width="16" height="11" viewBox="0 0 16 12" fill="currentColor"><path d="M8 2.6c2.3 0 4.4.9 6 2.4l1.4-1.5A11 11 0 0 0 8 .4 11 11 0 0 0 .6 3.5L2 5A8.6 8.6 0 0 1 8 2.6z"/><path d="M8 6.1c1.3 0 2.5.5 3.4 1.4l1.4-1.5A7 7 0 0 0 8 4a7 7 0 0 0-4.8 2l1.4 1.5A4.8 4.8 0 0 1 8 6.1z"/><circle cx="8" cy="10" r="1.5"/></svg><svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="1" y="1" width="20" height="10" rx="3" stroke="currentColor" stroke-opacity=".5"/><rect x="3" y="3" width="14.5" height="6" rx="1.5" fill="currentColor"/><rect x="22.6" y="4" width="1.6" height="4" rx=".7" fill="currentColor" fill-opacity=".55"/></svg></span></div>
+        <div class="ab"><div class="title">Account</div><div class="av">AS</div></div>
+        <div class="body">
+          <div class="rcard" style="flex-direction:row; align-items:center; gap:12px">
+            <div class="av" style="width:44px;height:44px;font-size:16px">AS</div>
+            <div style="flex:1"><div style="font-weight:700">Abhilash S.</div><div class="note">abhilash@blackbuck.com</div></div>
+            <span class="lock"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M2 7l4.5 3.5L12 3l5.5 7.5L22 7l-2 13H4L2 7z"/></svg> Pro</span>
+          </div>
+          <div class="rcard" style="gap:0; padding:2px 0">
+            <div class="field" style="border:0; border-radius:0; border-bottom:1px solid var(--hair)"><span>Subscription</span><span class="note">Yearly · renews 12 Sep ›</span></div>
+            <div class="field" style="border:0; border-radius:0; border-bottom:1px solid var(--hair)"><span>Notifications</span><span class="note">Push + Telegram ›</span></div>
+            <div class="field" style="border:0; border-radius:0; border-bottom:1px solid var(--hair)"><span>Default high window</span><span class="note">All-time ›</span></div>
+            <div class="field" style="border:0; border-radius:0"><span>Invite a friend</span><span class="badge">3 left</span></div>
+          </div>
+          <div class="metarow" style="justify-content:center; gap:6px"><span>Data: Angel One (live) · Yahoo (history)</span></div>
+          <div style="margin-top:auto"><div class="btn ghost sm" style="color:var(--down)">Sign out</div></div>
+        </div>
+        <div class="bn">
+          <a><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V5M4 15l5-5 4 3 7-8"/></svg></span>Screener</a>
+          <a><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6M10 20a2 2 0 0 0 4 0"/></svg></span>Alerts</a>
+          <a class="on"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.4"/><path d="M5 20a7 7 0 0 1 14 0"/></svg></span>Account</a>
+        </div>
+      </div></div>
+      <div class="cap"><b>Account</b>Plan status, notification channels, invite quota (referral loop), data-source transparency.</div>
+    </div>
+
+    <!-- Empty / onboarding tip -->
+    <div class="frame">
+      <div class="phone"><div class="screen">
+        <div class="sb"><span class="time mono">16:07</span><span class="isle"></span><span class="icons"><svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.7" y="5" width="3" height="6" rx="1"/><rect x="9.4" y="2.5" width="3" height="8.5" rx="1"/><rect x="14" y="0" width="3" height="11" rx="1"/></svg><svg width="16" height="11" viewBox="0 0 16 12" fill="currentColor"><path d="M8 2.6c2.3 0 4.4.9 6 2.4l1.4-1.5A11 11 0 0 0 8 .4 11 11 0 0 0 .6 3.5L2 5A8.6 8.6 0 0 1 8 2.6z"/><path d="M8 6.1c1.3 0 2.5.5 3.4 1.4l1.4-1.5A7 7 0 0 0 8 4a7 7 0 0 0-4.8 2l1.4 1.5A4.8 4.8 0 0 1 8 6.1z"/><circle cx="8" cy="10" r="1.5"/></svg><svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="1" y="1" width="20" height="10" rx="3" stroke="currentColor" stroke-opacity=".5"/><rect x="3" y="3" width="14.5" height="6" rx="1.5" fill="currentColor"/><rect x="22.6" y="4" width="1.6" height="4" rx=".7" fill="currentColor" fill-opacity=".55"/></svg></span></div>
+        <div class="ab"><div class="title">Screener</div><div class="av">AS</div></div>
+        <div class="body center" style="padding:0 24px">
+          <div style="width:56px;height:56px;border-radius:16px;background:var(--surf);border:1px solid var(--hair);display:grid;place-items:center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--mut)" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg></div>
+          <div style="font-weight:700; font-size:16px; margin-top:14px">No matches — yet</div>
+          <div class="note" style="margin-top:6px; max-width:26ch">Nothing sits 1–10% under its all-time high today. Widen the pullback band, or try a 3-year window.</div>
+          <div style="height:16px"></div>
+          <div class="btn ghost sm" style="width:auto; padding:10px 16px">Try 3-year high</div>
+        </div>
+        <div class="bn">
+          <a class="on"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V5M4 15l5-5 4 3 7-8"/></svg></span>Screener</a>
+          <a><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6M10 20a2 2 0 0 0 4 0"/></svg></span>Alerts</a>
+          <a><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.4"/><path d="M5 20a7 7 0 0 1 14 0"/></svg></span>Account</a>
+        </div>
+      </div></div>
+      <div class="cap"><b>Empty state</b>Never a blank screen — always a next action (widen band / change window).</div>
+    </div>
+  </div>
+
+  <footer>
+    <b style="color:var(--ink)">10 screens · the whole v0 flow.</b> These are static mockups to react to — not the build. Once you’ve marked up what to keep, I’ll turn them into the actual architecture plan (native vs. wrap-the-web, auth + whitelist, Play Billing, backend). Working title “Crest” — say the word to rename. <span style="color:var(--muted)">Real tickers &amp; the ATH-vs-N-year logic shown are the live product’s.</span>
+  </footer>
+</div>
